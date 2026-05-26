@@ -13,12 +13,11 @@ public class Game{
         window.setTitle("AMA");
         // Cambiar el icono de la ventana
         ImageIcon logo = new ImageIcon("imagen.png");
-        Image IconImage = logo.getImage();
-        window.setIconImage(IconImage); // la asigna
-        //generamos el objeto del panel
+        Image iconImage = logo.getImage();
+        window.setIconImage(iconImage); // la asigna
         GamePanel gamepanel = new GamePanel();
 
-        window.add(gamepanel); // lo aniadimos
+        window.add(gamepanel);
         window.pack();// la ventana encajara en los estandares que le hemos dado
         window.setLocationRelativeTo(null); // null indica que siempre se ejecutara al centro
         window.setVisible(true);

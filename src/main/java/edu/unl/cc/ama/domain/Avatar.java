@@ -1,5 +1,6 @@
 package edu.unl.cc.ama.domain;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 
 public class Avatar {

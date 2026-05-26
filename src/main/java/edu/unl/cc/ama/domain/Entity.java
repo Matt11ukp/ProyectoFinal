@@ -1,18 +1,24 @@
 package edu.unl.cc.ama.domain;
 
+import edu.unl.cc.ama.view.GamePanel;
+
 import java.awt.Graphics2D;
 
 public abstract class Entity {
     private int worldX;
-    private int wolrdY;
+    private int worldY;
     private int speed;
+    GamePanel gp;
 
-    public Entity(int worldX, int wolrdY, int speed) {
+    public Entity(int worldX, int worldY, int speed) {
         this.worldX = worldX;
-        this.wolrdY = wolrdY;
+        this.worldY = worldY;
         this.speed = speed;
     }
-    // este update iria hacia el de GamePanel, que si tendra el thread para funcionar
+
+    public Entity(GamePanel gp) {
+    }
+
     public void update(){
 
     }
@@ -30,11 +36,11 @@ public abstract class Entity {
     }
 
     public int getWolrdY() {
-        return wolrdY;
+        return worldY;
     }
 
     public void setWolrdY(int wolrdY) {
-        this.wolrdY = wolrdY;
+        this.worldY = wolrdY;
     }
 
     public int getSpeed() {
