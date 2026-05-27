@@ -1,0 +1,145 @@
+package edu.unl.cc.ama.view;
+
+import edu.unl.cc.ama.domain.Tile;
+
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
+public class TileManager {
+    GamePanel gp;
+    public Tile[] tile;
+    public int mapTileNum[][];
+
+    public TileManager(GamePanel gp){
+        this.gp = gp;
+        tile = new Tile[10]; // 10 tipos de tiles distintos
+        mapTileNum = new int[gp.maxWorldCol][gp.maxWorldRow];
+        getTileImage();
+        loadMap("/maps/tiles.txt");
+    }
+
+    public void getTileImage(){
+        setup(0, "grass", false);
+        setup(1, "water", true);
+        setup(2, "wood", true);
+        setup(3, "earth", false);
+        setup(4, "tree", true);
+        setup(5, "sand", false);
+    }
+
+    // para no tener que crear muchas lineas de codigo por cada tile
+    public void setup(int index, String imagePath, boolean collision){
+        UtilityTool uTool = new UtilityTool();
+        try{
+            BufferedImage original = ImageIO.read(getClass().getResourceAsStream("/tiles/" + imagePath + ".png"));
+            BufferedImage scaled = uTool.scaleImage(original, gp.tileSize, gp.tileSize);
+            tile[index] = new Tile(scaled, collision);
+        }catch(IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void loadMap(String filePath){
+        try {
+            InputStream is = getClass().getResourceAsStream(filePath); // leer el mapa
+            BufferedReader br = new BufferedReader(new InputStreamReader(is));
+            int col = 0;
+            int row = 0;
+            // pa que no se salga de los limites de la pantalla
+            while(col < gp.maxWorldCol && row < gp.maxWorldRow){
+                String line = br.readLine(); // para leer una linea de texto y almacenarlo en la variable
+
+                while(col < gp.maxWorldCol){
+                    String numbers[] = line.split(" "); // poner un espacio entre cada valor leido
+                    int num = Integer.parseInt(numbers[col]); // cambias de string a integer para poder leerlo como numero
+                    mapTileNum[col][row] = num; //guardamos el numero extraido aqui
+                    col++;
+                }
+                if(col == gp.maxWorldCol){
+                    col = 0;
+                    row++;
+                }
+            }
+            br.close(); // cerrar el bufferer reader
+        } catch (Exception e) {
+            e.printStackTrace();// para que imprima en consola si existe algun error
+        }
+    }
+    public void draw(Graphics2D g2){
+        // representan los indices de las matrices, los tiles
+        int worldCol = 0;
+        int worldRow = 0;
+
+        while(worldCol < gp.maxWorldCol && worldRow < gp.maxWorldRow){
+
+            int TileNum = mapTileNum[worldCol][worldRow];  //extrae un numero y lo asigna
+
+            // Posicion en el mapa
+            int worldX = worldCol * gp.tileSize;
+            int worldY = worldRow * gp.tileSize;
+
+            // 1. CÁLCULO DE CÁMARA (¿Dónde se dibuja en la pantalla?)
+            int screenX = worldX - gp.player.worldX + gp.player.screenX;
+            int screenY = worldY - gp.player.worldY + gp.player.screenY;
+
+            int rightOffSett = gp.screenWidth - gp.player.screenX;
+            int bottomOffSett = gp.screenHeight - gp.player.screenY;
+
+            // Congelar cámara en los bordes
+            if(gp.player.screenX > gp.player.worldX){ screenX = worldX; }
+            if(gp.player.screenY > gp.player.worldY){ screenY = worldY; }
+            if(rightOffSett > gp.maxWorldCol * gp.tileSize - gp.player.worldX){
+                screenX = gp.screenWidth - (gp.maxWorldCol * gp.tileSize - worldX);
+            }
+            if(bottomOffSett > gp.maxWorldRow * gp.tileSize - gp.player.worldY){
+                screenY = gp.screenHeight - (gp.maxWorldRow * gp.tileSize - worldY);
+            }
+
+            // 2. ALGORITMO DE VISIÓN REAL (Para evitar lag y bugs físicos)
+            int cameraLeftEdge = gp.player.worldX - gp.player.screenX;
+            int cameraTopEdge = gp.player.worldY - gp.player.screenY;
+            int cameraRightEdge = cameraLeftEdge + gp.screenWidth;
+            int cameraBottomEdge = cameraTopEdge + gp.screenHeight;
+
+            // Si la cámara chocó con un borde, reajustamos nuestra "visión" real
+            if(gp.player.screenX > gp.player.worldX) {
+                cameraLeftEdge = 0;
+                cameraRightEdge = gp.screenWidth;
+            }
+            if(gp.player.screenY > gp.player.worldY) {
+                cameraTopEdge = 0;
+                cameraBottomEdge = gp.screenHeight;
+            }
+            if(rightOffSett > gp.maxWorldCol * gp.tileSize - gp.player.worldX) {
+                cameraRightEdge = gp.maxWorldCol * gp.tileSize;
+                cameraLeftEdge = cameraRightEdge - gp.screenWidth;
+            }
+            if(bottomOffSett > gp.maxWorldRow * gp.tileSize - gp.player.worldY) {
+                cameraBottomEdge = gp.maxWorldRow * gp.tileSize;
+                cameraTopEdge = cameraBottomEdge - gp.screenHeight;
+            }
+
+            // 3. DIBUJADO OPTIMIZADO (Solo dibuja lo que la cámara está viendo)
+            if(worldX + gp.tileSize > cameraLeftEdge &&
+                    worldX - gp.tileSize < cameraRightEdge &&
+                    worldY + gp.tileSize > cameraTopEdge &&
+                    worldY - gp.tileSize < cameraBottomEdge) {
+
+                g2.drawImage(tile[TileNum].getImage(), screenX, screenY, gp.tileSize, gp.tileSize, null);
+            }
+
+            worldCol++; // continua al siguiente tile
+
+            // si se llega al borde de la coordenada x, se reinicia x y se va un tile hacia abajo (row)
+            if(worldCol == gp.maxWorldCol){
+                worldCol = 0;
+                worldRow++;
+            }
+        }
+    }
+}
