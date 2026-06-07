@@ -1,407 +1,376 @@
 package edu.unl.cc.ama.domain;
 
 import edu.unl.cc.ama.domain.objects.ObjectDoorOpen;
+import edu.unl.cc.ama.domain.objects.Type;
 import edu.unl.cc.ama.view.GamePanel;
+import edu.unl.cc.ama.view.GameState;
+import edu.unl.cc.ama.view.Key;
 import edu.unl.cc.ama.view.SoundName;
 
-import java.awt.*;
-import java.awt.image.BufferedImage;
+import java.awt.Rectangle;
 
-public class Player extends Entity{
-    public int lostCounter = 0;
-    public int winCounter = 0;
-    Key keyH;
-    boolean hasBoots = false;
-    boolean dash = false;
-    public int portalCooldown = 120;
-    public int portalMonsterCooldown = 120;
-    int counter;
-    int cooldown = 200;
-    public int keyNum = 0;
-    // donde se dibuja al jugador en la pantalla
-    public int screenX;
-    public int screenY;
+public class Player extends Entity {
 
-    public Player(GamePanel gp, Key keyH){
-        super(gp); // pasar gp a la clase abstracta entities
-        this.gp = gp;
+    private final Key keyH;
+
+    private boolean hasBoots = false;
+    private int keyNum = 0;
+    private int coinNum = 0;
+
+    private boolean dash = false;
+    private int dashCounter = 0;
+    private int cooldown = 200;
+
+    private int portalCooldown = 120;
+    private int portalMonsterCooldown = 120;
+
+    private int winCounter  = 0;
+    private int lostCounter = 0;
+
+    private final int screenX;
+    private final int screenY;
+
+    public Player(GamePanel gp, Key keyH) {
+        super(gp);
         this.keyH = keyH;
-        //indican el centro de la pantalla para el jugador
-        screenX = gp.screenWidth / 2 - (gp.tileSize / 2); // resta la mitad de un tile para que quede bien centrado
+
+        screenX = gp.screenWidth  / 2 - (gp.tileSize / 2);
         screenY = gp.screenHeight / 2 - (gp.tileSize / 2);
 
-        solidArea = new Rectangle(8, 16, 32, 32); // hitbox del personaje
-        // guardamos los valores default xq luego serzn cambiados
+        solidArea         = new Rectangle(8, 16, 32, 32);
         solidAreaDefaultX = solidArea.x;
         solidAreaDefaultY = solidArea.y;
-        attackArea.width = 36;
+        attackArea.width  = 36;
         attackArea.height = 36;
+
         setDefaultValues();
-        getPlayerImage();
-        getPlayerAttackImage();
+
     }
-    public void setDefaultValues(){
+
+    public void setDefaultValues() {
         hasBoots = false;
-        dash = false;
-        keyNum = 0;
-        //Posicion del jugador inicial enel mundo
-        worldX = gp.tileSize * 23;
-        worldY = gp.tileSize * 25;
-        speed = 4;
-        direction = "down"; // cualquier direccion
-        // estado del jugador
-        maxLife = 6; // 3 corazones
-        life = maxLife;
-    }
-    public void getPlayerImage(){
-        down = gp.skins.frame(gp.skins.image.getSkins(), gp.skins.image.getShirts(),
-                gp.skins.image.getEyes(), gp.skins.image.getHairsMale(), gp.skins.image.getHairsFemale());
-        down1 = setup("/player/downMoving1", gp.tileSize, gp.tileSize);
-        down2 = setup("/player/downMoving2", gp.tileSize, gp.tileSize);
-
-        left1 = setup("/player/left", gp.tileSize, gp.tileSize);
-        left2 = setup("/player/leftMoving", gp.tileSize, gp.tileSize);
-        right1 = setup("/player/right", gp.tileSize, gp.tileSize);
-        right2 = setup("/player/rightMoving", gp.tileSize, gp.tileSize);
-        up = setup("/player/up", gp.tileSize, gp.tileSize);
-        up1 = setup("/player/upMoving1", gp.tileSize, gp.tileSize);
-        up2 = setup("/player/upMoving2", gp.tileSize, gp.tileSize);
+        dash     = false;
+        keyNum   = 0;
+        coinNum = 0;
+        setWorldX(gp.tileSize * 23);
+        setWorldY(gp.tileSize * 25);
+        setSpeed(4);
+        setDirection("down");
+        setMaxLife(6);
+        setLife(getMaxLife());
+        setType(EntityType.PLAYER);
     }
 
-    public void getPlayerAttackImage(){
-        attackUp1 = setup("/player/upAttack1", gp.tileSize, gp.tileSize * 2);
-        attackUp2 = setup("/player/upAttack2", gp.tileSize, gp.tileSize * 2);
-        attackDown1 = setup("/player/attack1", gp.tileSize, gp.tileSize * 2);
-        attackDown2 = setup("/player/attack2", gp.tileSize, gp.tileSize * 2);
-        attackRight1 = setup("/player/rightAttack1", gp.tileSize * 2, gp.tileSize );
-        attackRight2 = setup("/player/rightAttack2", gp.tileSize * 2, gp.tileSize );
-        attackLeft1 = setup("/player/leftAttack1", gp.tileSize * 2, gp.tileSize );
-        attackLeft2 = setup("/player/leftAttack2", gp.tileSize * 2, gp.tileSize );
+    public void getPlayerImage() {
+        down  = gp.skins.frame(
+                    gp.skins.image.getSkins(),
+                    gp.skins.image.getShirts(),
+                    gp.skins.image.getEyes(),
+                    gp.skins.image.getHairsMale(),
+                    gp.skins.image.getHairsFemale());
+        down1  = gp.skins.frame(
+                gp.skins.image.getSkinDown1(),
+                gp.skins.image.getShirtDown1(),
+                gp.skins.image.getEyeDown1(),
+                gp.skins.image.getMaleDown1(),
+                null);
+        down2  = gp.skins.frame(
+                gp.skins.image.getSkinDown2(),
+                gp.skins.image.getShirtDown2(),
+                gp.skins.image.getEyeDown2(),
+                gp.skins.image.getMaleDown2(),
+                null);
+        left1  = gp.skins.frame(
+                gp.skins.image.getSkinLeft1(),
+                gp.skins.image.getShirtLeft1(),
+                gp.skins.image.getEyeLeft1(),
+                gp.skins.image.getMaleLeft1(),
+                null);
+        left2  = gp.skins.frame(
+                gp.skins.image.getSkinLeft2(),
+                gp.skins.image.getShirtLeft2(),
+                gp.skins.image.getEyeLeft2(),
+                gp.skins.image.getMaleLeft2(),
+                null);
+        right1 = gp.skins.frame(
+                gp.skins.image.getSkinRight1(),
+                gp.skins.image.getShirtRight1(),
+                gp.skins.image.getEyeRight1(),
+                gp.skins.image.getMaleRight1(),
+                null);
+        right2 = gp.skins.frame(
+                gp.skins.image.getSkinRight2(),
+                gp.skins.image.getShirtRight2(),
+                gp.skins.image.getEyeRight2(),
+                gp.skins.image.getMaleRight2(),
+                null);
+        up = gp.skins.frame(gp.skins.image.getSkinUp(),
+                     gp.skins.image.getShirtUp(),
+                     gp.skins.image.getEyeUp(),
+                     gp.skins.image.getMaleUp(), null);
+        up1 = gp.skins.frame(gp.skins.image.getSkinUp1(),
+                gp.skins.image.getShirtUp1(),
+                gp.skins.image.getEyeUp1(),
+                gp.skins.image.getMaleUp1(), null);
+        up2 = gp.skins.frame(gp.skins.image.getSkinUp2(),
+                gp.skins.image.getShirtUp2(),
+                gp.skins.image.getEyeUp2(),
+                gp.skins.image.getMaleUp2(), null);
     }
 
+    public void getPlayerAttackImage() {
+        attackUp1    = setup("/player/upAttack1",    gp.tileSize,     gp.tileSize * 2);
+        attackUp2    = setup("/player/upAttack2",    gp.tileSize,     gp.tileSize * 2);
+        attackDown1  = setup("/player/attack1",      gp.tileSize,     gp.tileSize * 2);
+        attackDown2  = setup("/player/attack2",      gp.tileSize,     gp.tileSize * 2);
+        attackRight1 = setup("/player/rightAttack1", gp.tileSize * 2, gp.tileSize);
+        attackRight2 = setup("/player/rightAttack2", gp.tileSize * 2, gp.tileSize);
+        attackLeft1  = setup("/player/leftAttack1",  gp.tileSize * 2, gp.tileSize);
+        attackLeft2  = setup("/player/leftAttack2",  gp.tileSize * 2, gp.tileSize);
+    }
 
-    // esto se llama 60 veces por segundo ya que esta dentro del loop
-    public void update(){
-        // System.out.println("Col: " + (worldX / gp.tileSize) + " | Fila: " + (worldY / gp.tileSize));
-        if(keyH.shiftPressed == true && hasBoots == true){
-            speed = 6;
-        } else{
-            speed = 4;
+    @Override
+    public void update() {
+        updateSpeed();
+        updateDash();
+        updatePortalCooldowns();
+        updateInvincibility();
+
+        if (isAttacking()) {
+            performAttack();
+        } else {
+            handleMovementInput();
         }
-        if(cooldown < 200){
-            cooldown++;
-        }
-        if(keyH.spacePressed == true && dash == false && cooldown > 180 ){
+    }
+
+    private void updateSpeed() {
+        setSpeed((keyH.shiftPressed && hasBoots) ? 6 : 4);
+    }
+
+    private void updateDash() {
+        if (cooldown < 200) cooldown++;
+
+        if (keyH.spacePressed && !dash && cooldown > 180) {
             gp.playSE(SoundName.DASH);
-            dash = true;
-            counter = 0;
-            cooldown = 0;
+            dash        = true;
+            dashCounter = 0;
+            cooldown    = 0;
         }
-        if(dash == true){
-            speed = 20;
-            counter++;
-            if(counter > 5){
+
+        if (dash) {
+            setSpeed(20);
+            dashCounter++;
+            if (dashCounter > 5) {
                 dash = false;
-                counter = 0;
-            }
-        }
-        if(portalCooldown < 200){
-            portalCooldown++;
-        }
-        if(portalMonsterCooldown < 200){
-            portalMonsterCooldown++;
-        }
-
-        if(invincible == true){
-            invincibleCounter++;
-            if(invincibleCounter > 60){
-                invincible = false;
-                invincibleCounter = 0;
-            }
-        }
-        if(attacking == true){
-            attacking();
-        }else{
-            //la actualizacion de los sprites solo se realiza cuando las teclas esten siendo presionadas
-            if(keyH.upPressed == true || keyH.downPressed == true || keyH.leftPressed == true || keyH.rightPressed == true || keyH.enterPressed == true){
-                if(keyH.upPressed == false && keyH.downPressed == false && keyH.leftPressed == false && keyH.rightPressed == false && keyH.enterPressed == true){
-                    int npcIndex = gp.cChecker.checkEntity(this, gp.npc);
-                    interactNPC(npcIndex);
-                }
-                if(keyH.upPressed == true){
-                    direction = "up"; // me muevo hacia arriba
-                    colissionOn = false;
-                    gp.cChecker.checkTile(this);  // checo si es posible moverme hacia esa direccion
-                    // chacar la colision de un objeto
-                    int objIndex = gp.cChecker.checkObject(this, true);
-                    pickUpObject(objIndex);
-                    int npcIndex = gp.cChecker.checkEntity(this, gp.npc);
-                    interactNPC(npcIndex);
-                    int monsterIndex = gp.cChecker.checkEntity(this, gp.monster);
-                    contactMonster(monsterIndex);
-                    if(colissionOn == false && keyH.enterPressed == false){
-                        worldY -= speed; // me muevo si se puede
-                    }
-                    gp.keyH.enterPressed = false;
-                }
-                if(keyH.downPressed == true){
-                    direction = "down";
-                    colissionOn = false;
-                    gp.cChecker.checkTile(this);
-                    int objIndex = gp.cChecker.checkObject(this, true);
-                    pickUpObject(objIndex);
-                    int npcIndex = gp.cChecker.checkEntity(this, gp.npc);
-                    interactNPC(npcIndex);
-                    int monsterIndex = gp.cChecker.checkEntity(this, gp.monster);
-                    contactMonster(monsterIndex);
-                    if(colissionOn == false && keyH.enterPressed == false){
-                        worldY += speed;
-                    }
-                    gp.keyH.enterPressed = false;
-                }
-                if(keyH.leftPressed == true){
-                    direction = "left";
-                    colissionOn = false;
-                    gp.cChecker.checkTile(this);
-                    int objIndex = gp.cChecker.checkObject(this, true);
-                    pickUpObject(objIndex);
-                    int npcIndex = gp.cChecker.checkEntity(this, gp.npc);
-                    interactNPC(npcIndex);
-                    int monsterIndex = gp.cChecker.checkEntity(this, gp.monster);
-                    contactMonster(monsterIndex);
-                    if(colissionOn == false && keyH.enterPressed == false){
-                        worldX -= speed;
-                    }
-                    gp.keyH.enterPressed = false;
-                }
-                if(keyH.rightPressed == true){
-                    direction = "right";
-                    colissionOn = false;
-                    gp.cChecker.checkTile(this);
-                    int objIndex = gp.cChecker.checkObject(this, true);
-                    pickUpObject(objIndex);
-                    int npcIndex = gp.cChecker.checkEntity(this, gp.npc);
-                    interactNPC(npcIndex);
-                    int monsterIndex = gp.cChecker.checkEntity(this, gp.monster);
-                    contactMonster(monsterIndex);
-                    if(colissionOn == false && keyH.enterPressed == false){
-                        worldX += speed;
-                    }
-                    gp.keyH.enterPressed = false;
-                }
-
-                spriteCounter++;
-                //velocidad a la que se moveria el personaje
-                if(spriteCounter > 10){
-                    if(spriteNum == 1){
-                        spriteNum = 2;
-                    } else if(spriteNum == 2){
-                        spriteNum = 1;
-                    }
-                    spriteCounter = 0;
-                }
+                dashCounter = 0;
             }
         }
     }
 
-    private void attacking() {
+    private void updatePortalCooldowns() {
+        if (portalCooldown        < 200) portalCooldown++;
+        if (portalMonsterCooldown < 200) portalMonsterCooldown++;
+    }
+
+    private void updateInvincibility() {
+        if (isInvincible()) {
+            setInvincibleCounter(getInvincibleCounter() + 1);
+            if (getInvincibleCounter() > 60) {
+                setInvincible(false);
+                setInvincibleCounter(0);
+            }
+        }
+    }
+
+    private void handleMovementInput() {
+        boolean anyKey = keyH.upPressed || keyH.downPressed
+                      || keyH.leftPressed || keyH.rightPressed
+                      || keyH.enterPressed;
+
+        if (!anyKey) return;
+
+        if (!keyH.upPressed && !keyH.downPressed
+                && !keyH.leftPressed && !keyH.rightPressed
+                && keyH.enterPressed) {
+            int npcIndex = gp.cChecker.checkEntity(this, gp.npc);
+            interactNPC(npcIndex);
+        }
+
+        if (keyH.upPressed)    moveInDirection("up");
+        if (keyH.downPressed)  moveInDirection("down");
+        if (keyH.leftPressed)  moveInDirection("left");
+        if (keyH.rightPressed) moveInDirection("right");
+
         spriteCounter++;
-        if(spriteCounter <= 5){
-            spriteNum = 1;
-        }
-        if(spriteCounter > 5 && spriteCounter <= 25){
-            spriteNum = 2;
-            // guardar la posicion actual del persoanej
-            int currentWorldX = worldX;
-            int currentWorldY = worldY;
-            int solidAreaWidth = solidArea.width;
-            int solidAreaHeight = solidArea.height;
-            //ajustar la posicion para que sea la del ataque
-            switch (direction) {
-                case "up": worldY -= attackArea.height; break;
-                case "down": worldY += attackArea.height; break;
-                case "left": worldX -= attackArea.width; break;
-                case "right": worldX += attackArea.width; break;
-            }
-            //el area de ataque se vuelve el area solida
-            solidArea.width = attackArea.width;
-            solidArea.height = attackArea.height;
-
-            int monsterIndex = gp.cChecker.checkEntity(this, gp.monster);
-            damageMonster(monsterIndex);
-            // luego de la colision, se vuelve a los datos originales
-            worldX = currentWorldX;
-            worldY = currentWorldY;
-            solidArea.width = solidAreaWidth;
-            solidArea.height = solidAreaHeight;
-        }
-        if(spriteCounter > 25){
-            spriteNum = 1;
+        if (spriteCounter > 10) {
+            spriteNum     = (spriteNum == 1) ? 2 : 1;
             spriteCounter = 0;
-            attacking = false;
-        }
-    }
-    private void damageMonster(int i) {
-        if(i != 999){
-            if(gp.monster[i].invincible == false){
-                gp.playSE(SoundName.HIT_MONSTER);
-                gp.monster[i].life -= 1;
-                gp.monster[i].invincible = true;
-                gp.monster[i].damageReaction();
-                if(gp.monster[i].life <= 0){
-                    gp.monster[i].dying = true;
-                }
-
-            }
-        }
-    }
-    public void contactMonster(int i) {
-        if(i != 999){
-            if(invincible == false){
-                gp.playSE(SoundName.RECEIVE_DAMAGE);
-                life -= 1;
-                invincible = true;
-                if(life <= 0){
-                    gp.stopMusic();
-                    gp.playSE(SoundName.DEATH_EFFECT);
-                    gp.gameState = gp.lostShow;
-                }
-            }
-
         }
     }
 
-    public void interactNPC(int i) {
-        if(gp.keyH.enterPressed == true){
-            if(i != 999){
-                gp.gameState = gp.dialogueState;
-                gp.npc[i].speak();
-            } else {
-                gp.playSE(SoundName.SWING);
-                attacking = true;
+    private void moveInDirection(String dir) {
+        setDirection(dir);
+        colissionOn = false;
+        gp.cChecker.checkTile(this);
+
+        int objIndex     = gp.cChecker.checkObject(this, true);
+        int npcIndex     = gp.cChecker.checkEntity(this, gp.npc);
+        int monsterIndex = gp.cChecker.checkEntity(this, gp.monster);
+
+        pickUpObject(objIndex);
+        interactNPC(npcIndex);
+        contactMonster(monsterIndex);
+
+        if (!colissionOn && !keyH.enterPressed) {
+            switch (dir) {
+                case "up"    -> worldY -= speed;
+                case "down"  -> worldY += speed;
+                case "left"  -> worldX -= speed;
+                case "right" -> worldX += speed;
             }
         }
         gp.keyH.enterPressed = false;
     }
-    public void pickUpObject(int i){
-        if(i != 999){
-            String ObjectName = gp.obj[i].name;
-            switch(ObjectName){
-                case "Key":
-                    gp.obj[i] = null;
-                    gp.playSE(SoundName.COIN);
-                    keyNum++;
-                    break;
-                case "Boots":
-                    gp.playSE(SoundName.POWER_UP);
-                    hasBoots = true;
-                    gp.obj[i] = null;
-                    break;
-                case "Door":
-                    if(keyNum > 0){
-                        int newX = gp.obj[i].worldX;
-                        int newY = gp.obj[i].worldY;
-                        gp.playSE(SoundName.DOOR);
-                        gp.obj[i] = new ObjectDoorOpen(gp);
-                        gp.obj[i].worldX = newX;
-                        gp.obj[i].worldY = newY;
-                        keyNum--;
-                        break;
-                    }
-                    break;
-                case "Chest":
-                    if(keyNum > 0){
-                        gp.playSE(SoundName.FANFARE);
-                        keyNum--;
-                        gp.gameState = gp.winShow;
-                        gp.obj[i] = null;
-                    }
-                    break;
-            }
 
+    private void performAttack() {
+        spriteCounter++;
+        if (spriteCounter <= 5) {
+            spriteNum = 1;
+        }
+        if (spriteCounter > 5 && spriteCounter <= 25) {
+            spriteNum = 2;
+
+            int savedX = worldX, savedY = worldY;
+            int savedW = solidArea.width, savedH = solidArea.height;
+
+            switch (getDirection()) {
+                case "up"    -> worldY -= attackArea.height;
+                case "down"  -> worldY += attackArea.height;
+                case "left"  -> worldX -= attackArea.width;
+                case "right" -> worldX += attackArea.width;
+            }
+            solidArea.width  = attackArea.width;
+            solidArea.height = attackArea.height;
+
+            int monsterIndex = gp.cChecker.checkEntity(this, gp.monster);
+            damageMonster(monsterIndex);
+
+            // Restaurar hitbox
+            worldX = savedX; worldY = savedY;
+            solidArea.width = savedW; solidArea.height = savedH;
+        }
+        if (spriteCounter > 25) {
+            spriteNum = 1;
+            spriteCounter = 0;
+            setAttacking(false);
         }
     }
-    public void draw(Graphics2D g2){
-        BufferedImage image = null;
 
-        //Comprobar si alguna tecla esta siendo presionada
-        boolean isMoving = keyH.upPressed == true || keyH.downPressed == true || keyH.leftPressed == true || keyH.rightPressed == true;
+    private void damageMonster(int i) {
+        if (i == 999) return;
+        Entity m = gp.monster[i];
+        if (!m.isInvincible()) {
+            gp.playSE(SoundName.HIT_MONSTER);
+            m.decreaseLife(1);
+            m.setInvincible(true);
+            m.damageReaction();
+            if (m.getLife() <= 0) m.setDying(true);
+        }
+    }
 
-        // --- 1. SELECCIÓN DE IMAGEN ---
-        if(attacking == false){
-            if(direction == "up"){
-                if(spriteNum == 1){ image = up1; }
-                if(spriteNum == 2){ image = up2; }
-                if(isMoving == false){ image = up; }
-            } else if(direction == "left"){
-                if(spriteNum == 1){ image = left1; }
-                if(spriteNum == 2){ image = left2; }
-                if(isMoving == false){ image = left1; }
-            } else if(direction == "right"){
-                if(spriteNum == 1){ image = right1; }
-                if(spriteNum == 2){ image = right2; }
-                if(isMoving == false){ image = right1; }
-            } else if(direction == "down"){
-                if(spriteNum == 1){ image = down1; }
-                if(spriteNum == 2){ image = down2; }
-                if(isMoving == false){ image = down; }
+    public void contactMonster(int i) {
+        if (i == 999) return;
+        if (!isInvincible()) {
+            gp.playSE(SoundName.RECEIVE_DAMAGE);
+            decreaseLife(1);
+            setInvincible(true);
+            if (getLife() <= 0) {
+                gp.stopMusic();
+                gp.playSE(SoundName.DEATH_EFFECT);
+                gp.gameState = GameState.LOST_SHOW;
             }
         }
-        if (attacking == true){
-            if(direction == "up"){
-                if(spriteNum == 1){ image = attackUp1; }
-                if(spriteNum == 2){ image = attackUp2; }
-            } else if(direction == "left"){
-                if(spriteNum == 1){ image = attackLeft1; }
-                if(spriteNum == 2){ image = attackLeft2; }
-            } else if(direction == "right"){
-                if(spriteNum == 1){ image = attackRight1; }
-                if(spriteNum == 2){ image = attackRight2; }
-            } else if(direction == "down"){
-                if(spriteNum == 1){ image = attackDown1; }
-                if(spriteNum == 2){ image = attackDown2; }
+    }
+
+    public void interactNPC(int i) {
+        if (keyH.enterPressed) {
+            if (i != 999) {
+                gp.gameState = GameState.DIALOGUE;
+                gp.npc[i].speak();
+            } else {
+                gp.playSE(SoundName.SWING);
+                setAttacking(true);
             }
         }
+        gp.keyH.enterPressed = false;
+    }
 
-        // --- 2. CÁLCULO DE CÁMARA (Para no chocar con paredes invisibles) ---
-        int x = screenX;
-        int y = screenY;
-
-        if(screenX > worldX){
-            x = worldX;
-        }
-        if(screenY > worldY){
-            y = worldY;
-        }
-        int rightOffset = gp.screenWidth - screenX;
-        if(rightOffset > gp.maxWorldCol * gp.tileSize - worldX){
-            x = gp.screenWidth - (gp.maxWorldCol * gp.tileSize - worldX);
-        }
-        int bottomOffset = gp.screenHeight - screenY;
-        if(bottomOffset > gp.maxWorldRow * gp.tileSize - worldY){
-            y = gp.screenHeight - (gp.maxWorldRow * gp.tileSize - worldY);
-        }
-
-        // --- 3. COMPENSACIÓN DEL ESPADAZO ---
-        // ¡Ojo aquí! Usamos la "x" y "y" de la cámara, NO screenX directo
-        int tempScreenX = x;
-        int tempScreenY = y;
-
-        if(attacking == true){
-            if(direction == "up"){
-                tempScreenY = y - gp.tileSize;
-            } else if(direction == "left"){
-                tempScreenX = x - gp.tileSize;
+    public void pickUpObject(int i) {
+        if (i == 999) return;
+        Type type = gp.obj[i].getType();
+        switch (type) {
+            case KEY -> {
+                gp.obj[i] = null;
+                gp.playSE(SoundName.COIN);
+                keyNum++;
+            }
+            case BOOTS -> {
+                gp.playSE(SoundName.POWER_UP);
+                hasBoots = true;
+                gp.obj[i] = null;
+            }
+            case DOOR -> {
+                if (keyNum > 0) {
+                    int nx = gp.obj[i].getWorldX(), ny = gp.obj[i].getWorldY();
+                    gp.playSE(SoundName.DOOR);
+                    gp.obj[i] = new ObjectDoorOpen();
+                    gp.obj[i].setWorldX(nx);
+                    gp.obj[i].setWorldY(ny);
+                    keyNum--;
+                }
+            }
+            case TEST_PORTAL -> {
+                // Objetivo 4: lanza el minijuego desde el Mundo Hub
+                gp.launchVisualTest();
+                gp.obj[i] = null;    // consume el portal
+            }
+            case CHEST -> {
+                if (keyNum > 0) {
+                    gp.playSE(SoundName.FANFARE);
+                    keyNum--;
+                    gp.gameState = GameState.WIN_SHOW;
+                    gp.obj[i] = null;
+                }
             }
         }
+    }
 
-        // --- 4. DIBUJAMOS AL JUGADOR ---
-        // (Al usar null al final en vez de gp.tileSize, la imagen se dibuja en su tamaño original,
-        // ya sea 1 tile normal o 2 tiles de ataque)
-        if(invincible == true){
-            g2.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.4f));
-        }
-        g2.drawImage(image, tempScreenX, tempScreenY, null);
-        g2.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
+    public boolean isMoving() {
+        return keyH.upPressed || keyH.downPressed
+            || keyH.leftPressed || keyH.rightPressed;
+    }
+
+    public int getScreenX() { return screenX; }
+    public int getScreenY() { return screenY; }
+    public int getKeyNum() { return keyNum; }
+    public void setKeyNum(int v) { this.keyNum = v; }
+    public boolean isHasBoots() { return hasBoots; }
+    public int getWinCounter() { return winCounter; }
+    public void setWinCounter(int v) { this.winCounter = v; }
+    public void incrementWinCounter() { this.winCounter++; }
+    public int getLostCounter() { return lostCounter; }
+    public void setLostCounter(int v) { this.lostCounter = v; }
+    public void incrementLostCounter() { this.lostCounter++; }
+    public int getPortalCooldown() { return portalCooldown; }
+    public void setPortalCooldown(int v) { this.portalCooldown = v; }
+    public int getPortalMonsterCooldown() { return portalMonsterCooldown; }
+    public void setPortalMonsterCooldown(int v) { this.portalMonsterCooldown = v; }
+
+    public int getCoinNum() {
+        return coinNum;
+    }
+
+    public void setCoinNum(int coinNum) {
+        this.coinNum = coinNum;
     }
 }

@@ -4,8 +4,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 
 public class UtilityTool {
-    //imagen original y el tamanio a estirar
-    public BufferedImage scaleImage(BufferedImage original, int width, int height){
+    public static BufferedImage scaleImage(BufferedImage original, int width, int height){
         // lienzo en blanco con el tamanio al que estiraremos
         BufferedImage scaledImage = new BufferedImage(width, height, 2);
         // sacamos el pincel para dibujar

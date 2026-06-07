@@ -10,10 +10,6 @@ public class Game{
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         window.setResizable(false);
         window.setTitle("AMA");
-        // Cambiar el icono de la ventana
-        ImageIcon logo = new ImageIcon("imagen.png");
-        Image iconImage = logo.getImage();
-        window.setIconImage(iconImage); // la asigna
         GamePanel gamePanel = new GamePanel();
 
         window.add(gamePanel);

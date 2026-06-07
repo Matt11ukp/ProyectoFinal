@@ -5,153 +5,362 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 
 public class ImageGetter {
-    GamePanel gp;
 
-    private BufferedImage skin,  whiteSkin, whiteSkinBlock, skinBlock, female, male,
-            eyesBlue, eyesBrown, eyesGreen, eyesGreener, eyesHoney, eyesPurple,
-            eyesRed, eyesYellow, eyesPink, blondeFemale, blueShortFemale, pinkFemale, whiteFemale,
-            brownFemale, blondeJellyfish, pinkJellyfish, greenJellyfish, BlondeShort, pinkShort, femaleHair, lightBlueFemale,
-            deepBlueEyes, lightBlueEyes, honeyEyes, darkGreenEyes, blackEyes,
-            eyesBlueSky, wolfcutBlue,  wolfcutOrange, wolfcutHoney,skin1, skin1block, skin2, skin2block, skin3, skin3block,
-            skin4, skin4block, skin5, skin5block, skin6, skin6block, skin7, skin7block, skin8, skin8block, skin9, skin9block,
-            skin10, skin10block;
+    private final int size;
 
-    private BufferedImage skins[];
-    private BufferedImage hairsMale[] = new BufferedImage[15];
-    private BufferedImage shirtImages[][] = new BufferedImage[15][10];
-    private BufferedImage skinImages[][] = new BufferedImage[12][10];
-    private BufferedImage hairMaleImages[][] = new BufferedImage[15][4];
-    private BufferedImage hairsFemale[];
-    private BufferedImage shirts[] = new BufferedImage[15];
-    private BufferedImage eyes[];
-    private BufferedImage skinBlocks[];
+    private final BufferedImage[][] shirtImages   = new BufferedImage[15][10];
+    private final BufferedImage[][] skinImages    = new BufferedImage[12][10];
+    private final BufferedImage[][] hairMaleImages = new BufferedImage[15][4];
+    private final BufferedImage[][] eyeImages     = new BufferedImage[15][3];
 
-    public ImageGetter(GamePanel gp){
-        this.gp = gp;
+    private static BufferedImage[] objects = new BufferedImage[10];
+
+    private final BufferedImage[] shirts     = new BufferedImage[15];
+    private final BufferedImage[] hairsFemale = new BufferedImage[15];
+    private final BufferedImage[] hairsMale  = new BufferedImage[15];
+    private final BufferedImage[] skins      = new BufferedImage[12];
+    private final BufferedImage[] eyes       = new BufferedImage[15];
+    private final BufferedImage[] skinBlocks = new BufferedImage[12];
+
+    // Direccion
+
+    private final BufferedImage[] skinDown1 = new BufferedImage[12];
+    private final BufferedImage[] shirtDown1 = new BufferedImage[15];
+    private final BufferedImage[] eyeDown1 = new BufferedImage[15];
+    private final BufferedImage[] maleDown1 = new BufferedImage[15];
+    private final BufferedImage[] femaleDown1 = new BufferedImage[15];
+
+    private final BufferedImage[] skinDown2 = new BufferedImage[12];
+    private final BufferedImage[] shirtDown2 = new BufferedImage[15];
+    private final BufferedImage[] eyeDown2 = new BufferedImage[15];
+    private final BufferedImage[] maleDown2 = new BufferedImage[15];
+    private final BufferedImage[] femaleDown2 = new BufferedImage[15];
+
+    private final BufferedImage[] skinUp = new BufferedImage[12];
+    private final BufferedImage[] shirtUp = new BufferedImage[15];
+    private final BufferedImage[] eyeUp = new BufferedImage[15];
+    private final BufferedImage[] maleUp = new BufferedImage[15];
+    private final BufferedImage[] femaleUp = new BufferedImage[15];
+
+    private final BufferedImage[] skinUp1 = new BufferedImage[12];
+    private final BufferedImage[] shirtUp1 = new BufferedImage[15];
+    private final BufferedImage[] eyeUp1 = new BufferedImage[15];
+    private final BufferedImage[] maleUp1 = new BufferedImage[15];
+    private final BufferedImage[] femaleUp1 = new BufferedImage[15];
+
+    private final BufferedImage[] skinUp2 = new BufferedImage[12];
+    private final BufferedImage[] shirtUp2 = new BufferedImage[15];
+    private final BufferedImage[] eyeUp2 = new BufferedImage[15];
+    private final BufferedImage[] maleUp2 = new BufferedImage[15];
+    private final BufferedImage[] femaleUp2 = new BufferedImage[15];
+
+    private final BufferedImage[] skinLeft1 = new BufferedImage[12];
+    private final BufferedImage[] shirtLeft1 = new BufferedImage[15];
+    private final BufferedImage[] eyeLeft1 = new BufferedImage[15];
+    private final BufferedImage[] maleLeft1 = new BufferedImage[15];
+    private final BufferedImage[] femaleLeft1 = new BufferedImage[15];
+
+    private final BufferedImage[] skinLeft2 = new BufferedImage[12];
+    private final BufferedImage[] shirtLeft2 = new BufferedImage[15];
+    private final BufferedImage[] eyeLeft2 = new BufferedImage[15];
+    private final BufferedImage[] maleLeft2 = new BufferedImage[15];
+    private final BufferedImage[] femaleLeft2 = new BufferedImage[15];
+
+    private final BufferedImage[] skinRight1 = new BufferedImage[12];
+    private final BufferedImage[] shirtRight1 = new BufferedImage[15];
+    private final BufferedImage[] eyeRight1 = new BufferedImage[15];
+    private final BufferedImage[] maleRight1 = new BufferedImage[15];
+    private final BufferedImage[] femaleRight1 = new BufferedImage[15];
+
+    private final BufferedImage[] skinRight2 = new BufferedImage[12];
+    private final BufferedImage[] shirtRight2 = new BufferedImage[15];
+    private final BufferedImage[] eyeRight2 = new BufferedImage[15];
+    private final BufferedImage[] maleRight2 = new BufferedImage[15];
+    private final BufferedImage[] femaleRight2 = new BufferedImage[15];
+
+    private BufferedImage female;
+    private BufferedImage male;
+
+    public ImageGetter(int tileSize) {
+        this.size = tileSize;
         getSkin();
     }
 
-    public BufferedImage setup(String imageName, int width, int Height){
-        UtilityTool uTool = new UtilityTool();
-        BufferedImage image = null;
-        try{
-            image = ImageIO.read(getClass().getResourceAsStream(imageName + ".png"));
-            image = uTool.scaleImage(image, width, Height);
-        } catch(IOException e){
-            e.printStackTrace();
-        }
-        return image;
-    }
+    public void getSkin() {
+        imageSingle(9,  "objects",        objects);
+        imageSingle(12, "skin/Block",     skinBlocks);
+        imageSingle(15, "skin/HairFemale", hairsFemale);
 
-    public void getSkin(){
-        getImages(15, 4, "Hair", "hair", hairMaleImages);
+        getImages(15, 4,  "Hair",  "hair",  hairMaleImages);
         getImages(15, 10, "Shirt", "shirt", shirtImages);
-        getImages(12, 10, "Skin", "skin", skinImages);
-        skin =  setup("/skin/skinMolde", gp.tileSize, gp.tileSize);
-        skinBlock = setup("/skin/blockMolde", gp.tileSize, gp.tileSize);
-        whiteSkin = setup("/skin/whiteSkin", gp.tileSize, gp.tileSize);
-        whiteSkinBlock = setup("/skin/whiteSkinBlock", gp.tileSize, gp.tileSize);
-        skin1 = setup("/skin/skin1", gp.tileSize, gp.tileSize);
-        skin1block = setup("/skin/skin1block", gp.tileSize, gp.tileSize);
-        skin2 = setup("/skin/skin2", gp.tileSize, gp.tileSize);
-        skin2block = setup("/skin/skin2block", gp.tileSize, gp.tileSize);
-        skin3 = setup("/skin/skin3", gp.tileSize, gp.tileSize);
-        skin3block = setup("/skin/skin3block", gp.tileSize, gp.tileSize);
-        skin4 = setup("/skin/skin4", gp.tileSize, gp.tileSize);
-        skin4block = setup("/skin/skin4block", gp.tileSize, gp.tileSize);
-        skin5 = setup("/skin/skin5", gp.tileSize, gp.tileSize);
-        skin5block = setup("/skin/skin5block", gp.tileSize, gp.tileSize);
-        skin6 = setup("/skin/skin6", gp.tileSize, gp.tileSize);
-        skin6block = setup("/skin/skin6block", gp.tileSize, gp.tileSize);
-        skin7 = setup("/skin/skin7", gp.tileSize, gp.tileSize);
-        skin7block = setup("/skin/skin7block", gp.tileSize, gp.tileSize);
-        skin8 = setup("/skin/skin8", gp.tileSize, gp.tileSize);
-        skin8block = setup("/skin/skin8block", gp.tileSize, gp.tileSize);
-        skin9 = setup("/skin/skin9", gp.tileSize, gp.tileSize);
-        skin9block = setup("/skin/skin9block", gp.tileSize, gp.tileSize);
-        skin10 = setup("/skin/skin10", gp.tileSize, gp.tileSize);
-        skin10block = setup("/skin/skin10block", gp.tileSize, gp.tileSize);
-        female = setup("/skin/female", gp.tileSize, gp.tileSize);
-        male = setup("/skin/male", gp.tileSize, gp.tileSize);
-        blondeFemale = setup("/skin/blondeFemale", gp.tileSize, gp.tileSize);
-        blueShortFemale = setup("/skin/blueShortFemale", gp.tileSize, gp.tileSize);
-        pinkFemale = setup("/skin/pinkFemale", gp.tileSize, gp.tileSize);
-        whiteFemale = setup("/skin/whiteFemale", gp.tileSize, gp.tileSize);
-        brownFemale = setup("/skin/brownFemale", gp.tileSize, gp.tileSize);
-        blondeJellyfish = setup("/skin/blondeJellyfish", gp.tileSize, gp.tileSize);
-        pinkJellyfish = setup("/skin/pinkJellyfish", gp.tileSize, gp.tileSize);
-        greenJellyfish = setup("/skin/greenJellyfish", gp.tileSize, gp.tileSize);
-        BlondeShort = setup("/skin/BlondeShort", gp.tileSize, gp.tileSize);
-        pinkShort = setup("/skin/pinkShort", gp.tileSize, gp.tileSize);
-        femaleHair = setup("/skin/femaleHair", gp.tileSize, gp.tileSize);
-        lightBlueFemale = setup("/skin/lightBlueFemale", gp.tileSize, gp.tileSize);
-        wolfcutBlue = setup("/skin/wolfcutBlue", gp.tileSize, gp.tileSize);
-        wolfcutOrange = setup("/skin/wolfcutOrange", gp.tileSize, gp.tileSize);
-        wolfcutHoney = setup("/skin/wolfcutHoney", gp.tileSize, gp.tileSize);
+        getImages(12, 10, "Skin",  "skin",  skinImages);
+        getImages(15, 3,  "Eye",   "eye",   eyeImages);
 
-        eyesBlue = setup("/skin/eyesBlue", gp.tileSize, gp.tileSize);
-        eyesBrown = setup("/skin/eyesBrown", gp.tileSize, gp.tileSize);
-        eyesGreen = setup("/skin/eyesGreen", gp.tileSize, gp.tileSize);
-        eyesGreener = setup("/skin/eyesGreener", gp.tileSize, gp.tileSize);
-        eyesHoney = setup("/skin/eyesHoney", gp.tileSize, gp.tileSize);
-        eyesPink = setup("/skin/eyesPink", gp.tileSize, gp.tileSize);
-        eyesPurple = setup("/skin/eyesPurple", gp.tileSize, gp.tileSize);
-        eyesRed = setup("/skin/eyesRed", gp.tileSize, gp.tileSize);
-        eyesYellow = setup("/skin/eyesYellow", gp.tileSize, gp.tileSize);
-        deepBlueEyes = setup("/skin/deepBlueEyes", gp.tileSize, gp.tileSize);
-        lightBlueEyes = setup("/skin/lightBlueEyes", gp.tileSize, gp.tileSize);
-        honeyEyes = setup("/skin/honeyEyes", gp.tileSize, gp.tileSize);
-        darkGreenEyes = setup("/skin/darkGreenEyes", gp.tileSize, gp.tileSize);
-        blackEyes = setup("/skin/blackEyes", gp.tileSize, gp.tileSize);
-        eyesBlueSky = setup("/skin/eyesBlueSky", gp.tileSize, gp.tileSize);
+        female = setup("/skin/female", size, size);
+        male   = setup("/skin/male",   size, size);
 
-        skins = new BufferedImage[]{skin, whiteSkin, skin1, skin2, skin3, skin4, skin5, skin6, skin7, skin8, skin9, skin10};
-        skinBlocks = new BufferedImage[]{skinBlock, whiteSkinBlock, skin1block, skin2block, skin3block, skin4block, skin5block,
-                skin6block, skin7block, skin8block, skin9block, skin10block};
-
-
-        hairsFemale = new BufferedImage[]{blondeFemale, blueShortFemale, pinkFemale, whiteFemale, brownFemale, blondeJellyfish, pinkJellyfish,
-                greenJellyfish, BlondeShort, pinkShort, femaleHair, lightBlueFemale, wolfcutBlue, wolfcutHoney, wolfcutOrange};
-        for(int i = 0; i < 15; i++){
-            hairsMale[i] = hairMaleImages[i][0];
-        }
-        for(int i = 0; i < 15; i++){
-            shirts[i] = shirtImages[i][0];
-        }
-
-        eyes = new BufferedImage[]{eyesBlue, eyesBrown, eyesGreen, eyesGreener, eyesHoney, eyesPink, eyesPurple, eyesRed, eyesYellow,
-                deepBlueEyes, lightBlueEyes, honeyEyes, darkGreenEyes, blackEyes, eyesBlueSky};
+        for (int i = 0; i < 15; i++) hairsMale[i] = hairMaleImages[i][0];
+        for (int i = 0; i < 15; i++) shirts[i] = shirtImages[i][0];
+        for (int i = 0; i < 15; i++) eyes[i] = eyeImages[i][0];
+        for (int i = 0; i < 12; i++) skins[i] = skinImages[i][0];
+        //down1
+        for (int i = 0; i < 15; i++) maleDown1[i] = hairMaleImages[i][0];
+        for (int i = 0; i < 15; i++) shirtDown1[i] = shirtImages[i][1];
+        for (int i = 0; i < 15; i++) eyeDown1[i] = eyeImages[i][0];
+        for (int i = 0; i < 12; i++) skinDown1[i] = skinImages[i][1];
+        //down2
+        for (int i = 0; i < 15; i++) maleDown2[i] = hairMaleImages[i][0];
+        for (int i = 0; i < 15; i++) shirtDown2[i] = shirtImages[i][2];
+        for (int i = 0; i < 15; i++) eyeDown2[i] = eyeImages[i][0];
+        for (int i = 0; i < 12; i++) skinDown2[i] = skinImages[i][2];
+        //up
+        for (int i = 0; i < 15; i++) maleUp[i] = hairMaleImages[i][3];
+        for (int i = 0; i < 15; i++) shirtUp[i] = shirtImages[i][7];
+        for (int i = 0; i < 15; i++) eyeUp[i] = eyeImages[i][2];
+        for (int i = 0; i < 12; i++) skinUp[i] = skinImages[i][7];
+        //up1
+        for (int i = 0; i < 15; i++) maleUp1[i] = hairMaleImages[i][3];
+        for (int i = 0; i < 15; i++) shirtUp1[i] = shirtImages[i][8];
+        for (int i = 0; i < 15; i++) eyeUp1[i] = eyeImages[i][2];
+        for (int i = 0; i < 12; i++) skinUp1[i] = skinImages[i][8];
+        //up2
+        for (int i = 0; i < 15; i++) maleUp2[i] = hairMaleImages[i][3];
+        for (int i = 0; i < 15; i++) shirtUp2[i] = shirtImages[i][9];
+        for (int i = 0; i < 15; i++) eyeUp2[i] = eyeImages[i][2];
+        for (int i = 0; i < 12; i++) skinUp2[i] = skinImages[i][9];
+        //left1
+        for (int i = 0; i < 15; i++) maleLeft1[i] = hairMaleImages[i][1];
+        for (int i = 0; i < 15; i++) shirtLeft1[i] = shirtImages[i][3];
+        for (int i = 0; i < 15; i++) eyeLeft1[i] = eyeImages[i][1];
+        for (int i = 0; i < 12; i++) skinLeft1[i] = skinImages[i][3];
+        //left2
+        for (int i = 0; i < 15; i++) maleLeft2[i] = hairMaleImages[i][1];
+        for (int i = 0; i < 15; i++) shirtLeft2[i] = shirtImages[i][4];
+        for (int i = 0; i < 15; i++) eyeLeft2[i] = eyeImages[i][1];
+        for (int i = 0; i < 12; i++) skinLeft2[i] = skinImages[i][4];
+        //right1
+        for (int i = 0; i < 15; i++) maleRight1[i] = hairMaleImages[i][2];
+        for (int i = 0; i < 15; i++) shirtRight1[i] = shirtImages[i][5];
+        for (int i = 0; i < 15; i++) eyeRight1[i] = eyeImages[i][2];
+        for (int i = 0; i < 12; i++) skinRight1[i] = skinImages[i][5];
+        //right2
+        for (int i = 0; i < 15; i++) maleRight2[i] = hairMaleImages[i][2];
+        for (int i = 0; i < 15; i++) shirtRight2[i] = shirtImages[i][6];
+        for (int i = 0; i < 15; i++) eyeRight2[i] = eyeImages[i][2];
+        for (int i = 0; i < 12; i++) skinRight2[i] = skinImages[i][6];
     }
 
-    public void getImages(int images, int directions, String folder, String type, BufferedImage arrayImages[][]){
-        for(int i = 0; i < images; i++){
-            for(int j = 0; j < directions; j++){
-                arrayImages[i][j] = setup("/skin/" + folder + "/" + type + "_" + i + "_" + j, gp.tileSize, gp.tileSize);
-            }
+    public void getImages(int count, int dirs, String folder,
+                          String type, BufferedImage[][] dest) {
+        for (int i = 0; i < count; i++)
+            for (int j = 0; j < dirs; j++)
+                dest[i][j] = setup("/skin/" + folder + "/" + type + "_" + i + "_" + j,
+                                   size, size);
+    }
+
+    public void imageSingle(int count, String type, BufferedImage[] dest) {
+        for (int i = 0; i < count; i++)
+            dest[i] = setup("/" + type + "/" + i, size, size);
+    }
+
+    public BufferedImage setup(String imageName, int width, int height) {
+        try {
+            BufferedImage img = ImageIO.read(
+                getClass().getResourceAsStream(imageName + ".png"));
+            return UtilityTool.scaleImage(img, width, height);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
         }
     }
-    public BufferedImage[] getSkins() {
-        return skins;
+
+    public BufferedImage[]   getSkins()        { return skins; }
+    public BufferedImage[]   getHairsFemale()  { return hairsFemale; }
+    public BufferedImage[]   getHairsMale()    { return hairsMale; }
+    public BufferedImage[]   getShirts()       { return shirts; }
+    public BufferedImage[]   getEyes()         { return eyes; }
+    public BufferedImage[]   getSkinBlocks()   { return skinBlocks; }
+    public BufferedImage     getFemale()       { return female; }
+    public BufferedImage     getMale()         { return male; }
+    public static BufferedImage[] getObjects() { return objects; }
+
+    public BufferedImage[] getSkinUp() {
+        return skinUp;
     }
-    public BufferedImage[] getHairsFemale() {
-        return hairsFemale;
+
+    public BufferedImage[] getShirtUp() {
+        return shirtUp;
     }
-    public BufferedImage[] getHairsMale() {
-        return hairsMale;
+
+    public BufferedImage[] getEyeUp() {
+        return eyeUp;
     }
-    public BufferedImage[] getShirts() {
-        return shirts;
+
+    public BufferedImage[] getMaleUp() {
+        return maleUp;
     }
-    public BufferedImage[] getEyes() {
-        return eyes;
+
+    public BufferedImage[] getFemaleUp() {
+        return femaleUp;
     }
-    public BufferedImage[] getSkinBlocks() {
-        return skinBlocks;
+
+    public BufferedImage[] getSkinUp1() {
+        return skinUp1;
     }
-    public BufferedImage getFemale() {
-        return female;
+
+    public BufferedImage[] getShirtUp1() {
+        return shirtUp1;
     }
-    public BufferedImage getMale() {
-        return male;
+
+    public BufferedImage[] getEyeUp1() {
+        return eyeUp1;
+    }
+
+    public BufferedImage[] getMaleUp1() {
+        return maleUp1;
+    }
+
+    public BufferedImage[] getFemaleUp1() {
+        return femaleUp1;
+    }
+
+    public BufferedImage[] getSkinUp2() {
+        return skinUp2;
+    }
+
+    public BufferedImage[] getShirtUp2() {
+        return shirtUp2;
+    }
+
+    public BufferedImage[] getEyeUp2() {
+        return eyeUp2;
+    }
+
+    public BufferedImage[] getMaleUp2() {
+        return maleUp2;
+    }
+
+    public BufferedImage[] getFemaleUp2() {
+        return femaleUp2;
+    }
+
+    public BufferedImage[] getSkinLeft1() {
+        return skinLeft1;
+    }
+
+    public BufferedImage[] getShirtLeft1() {
+        return shirtLeft1;
+    }
+
+    public BufferedImage[] getEyeLeft1() {
+        return eyeLeft1;
+    }
+
+    public BufferedImage[] getMaleLeft1() {
+        return maleLeft1;
+    }
+
+    public BufferedImage[] getFemaleLeft1() {
+        return femaleLeft1;
+    }
+
+    public BufferedImage[] getSkinLeft2() {
+        return skinLeft2;
+    }
+
+    public BufferedImage[] getShirtLeft2() {
+        return shirtLeft2;
+    }
+
+    public BufferedImage[] getEyeLeft2() {
+        return eyeLeft2;
+    }
+
+    public BufferedImage[] getMaleLeft2() {
+        return maleLeft2;
+    }
+
+    public BufferedImage[] getFemaleLeft2() {
+        return femaleLeft2;
+    }
+
+    public BufferedImage[] getSkinRight1() {
+        return skinRight1;
+    }
+
+    public BufferedImage[] getShirtRight1() {
+        return shirtRight1;
+    }
+
+    public BufferedImage[] getEyeRight1() {
+        return eyeRight1;
+    }
+
+    public BufferedImage[] getMaleRight1() {
+        return maleRight1;
+    }
+
+    public BufferedImage[] getFemaleRight1() {
+        return femaleRight1;
+    }
+
+    public BufferedImage[] getSkinRight2() {
+        return skinRight2;
+    }
+
+    public BufferedImage[] getShirtRight2() {
+        return shirtRight2;
+    }
+
+    public BufferedImage[] getEyeRight2() {
+        return eyeRight2;
+    }
+
+    public BufferedImage[] getMaleRight2() {
+        return maleRight2;
+    }
+
+    public BufferedImage[] getFemaleRight2() {
+        return femaleRight2;
+    }
+
+    public BufferedImage[] getSkinDown1() {
+        return skinDown1;
+    }
+
+    public BufferedImage[] getShirtDown1() {
+        return shirtDown1;
+    }
+
+    public BufferedImage[] getEyeDown1() {
+        return eyeDown1;
+    }
+
+    public BufferedImage[] getMaleDown1() {
+        return maleDown1;
+    }
+
+    public BufferedImage[] getFemaleDown1() {
+        return femaleDown1;
+    }
+
+    public BufferedImage[] getSkinDown2() {
+        return skinDown2;
+    }
+
+    public BufferedImage[] getShirtDown2() {
+        return shirtDown2;
+    }
+
+    public BufferedImage[] getEyeDown2() {
+        return eyeDown2;
+    }
+
+    public BufferedImage[] getMaleDown2() {
+        return maleDown2;
+    }
+
+    public BufferedImage[] getFemaleDown2() {
+        return femaleDown2;
     }
 }

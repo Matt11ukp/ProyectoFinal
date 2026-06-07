@@ -1,231 +1,398 @@
 package edu.unl.cc.ama.view;
 
 import edu.unl.cc.ama.domain.*;
+import edu.unl.cc.ama.domain.objects.Item;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 
-public class GamePanel extends JPanel implements Runnable{
-    // configuraciones de la ventana
-    public int originalTileSize = 16; // 16x16 de resolucion
-    // se debe hacer un escalado para que se pueda ver bien en la pantalla
-    public int scale = 3;
-    // es como multiplicar 16 x 3, para que se vea mas grande pero con la misma resolucion
-    public int tileSize = originalTileSize * scale;
-    // tamanio de la pantalla
-    public int maxScreenCol = 30; // horizontal
-    public int maxScreenRow = 16; // vertical
-    public int screenWidth = tileSize * maxScreenCol; // 1440
-    public int screenHeight = tileSize * maxScreenRow; // 768
+/**
+ * Orquestador principal del motor 2D y mediador de todos los sistemas.
+ *
+ * OBJETIVO 4 — Flujo modular de navegación:
+ *   • launchVisualTest(): lanza el minijuego desde cualquier estado
+ *     (TITLE o PLAY). Memoriza previousGameState para volver.
+ *   • returnFromVisualTest(): devuelve al estado exacto de origen.
+ *   • updateVisual(): tick del minijuego; detecta fin y regresa solo.
+ *
+ * OBJETIVO 1 — Escalabilidad para futuras pruebas:
+ *   El campo "private Test activeTest" es el punto de extensión.
+ *   Para añadir PruebaMatematicas:
+ *     1. PruebaMatematicas extends Test  (en domain/)
+ *     2. Llamar launchTest(new PruebaMatematicas(), GameState.MATH)
+ *     3. El resto del motor (loop, render, resultado) no cambia.
+ *
+ * CORRECCIONES RESPECTO AL ORIGINAL:
+ *   • updateLoading() ya no contiene el bloque VISUAL huérfano.
+ *   • paintComponent() ya no duplica el draw del minijuego.
+ *   • isMenuState() incluye VISUAL → evita dibujar el mundo debajo.
+ *   • Mouse movido de domain a view (violación MVC corregida).
+ */
+public class GamePanel extends JPanel implements IGameLoop {
 
-    //Configuraciones del mapa
-    public int maxWorldCol = 50;
-    public int maxWorldRow = 50;
-    // FPS
-    int fps = 60;
+    // ── CONFIGURACIÓN ─────────────────────────────────────────────────────────
+    public final int originalTileSize = 16;
+    public final int scale            = 3;
+    public final int tileSize         = originalTileSize * scale;
+    public final int maxScreenCol     = 30;
+    public final int maxScreenRow     = 16;
+    public final int screenWidth      = tileSize * maxScreenCol;
+    public final int screenHeight     = tileSize * maxScreenRow;
+    public final int maxWorldCol      = 50;
+    public final int maxWorldRow      = 50;
+    public final int worldWidth       = tileSize * maxWorldCol;
+    public final int worldHeight      = tileSize * maxWorldRow;
 
-    public TileManager tileM = new TileManager(this);
+    // ── SISTEMAS (orden de instanciación — Regla de Oro #5) ──────────────────
+    public  final TileManager    tileM    = new TileManager(this);    // 1
+    public  final Key            keyH     = new Key(this);            // 2
+    public  final CollisionCheck cChecker = new CollisionCheck(this); // 3
+    public  final AssetSetter    sett     = new AssetSetter(this);    // 4
+    public  final Avatar         skins    = new Avatar(this);         // 5
+    public  final Ui             ui       = new Ui(this);             // 6
+    public  final EventHandler   eHandler = new EventHandler(this);   // 7
+    public  final Player         player   = new Player(this, keyH);   // 8
+    public  final EntityRenderer renderer = new EntityRenderer(this); // 9
 
-    public Key keyH = new Key(this); // nombre de la clase de key
-    //Sonido
-    Sound soundEfect = new Sound();
-    Sound music = new Sound();
-    public CollisionCheck cChecker = new CollisionCheck(this);
-    public AssetSetter sett = new AssetSetter(this);
-    public Ui ui = new Ui(this);
-    public Avatar skins = new Avatar(this);
-    public EventHandler eHandler = new EventHandler(this);
-    Thread gameThread;// repite el redibujado de la pantalla 60 veces por segundo (FPS)
-    // entifsdes y objetos
-    public Player player = new Player(this, this.keyH);
-    public Entity obj[] = new Entity[20]; // podemos mostrar 10 objetos al mismo tiempo
-    public Entity npc[] = new Entity[10];
-    public Entity monster[] = new Entity[10];
-    // poner todas las entiddes en una lista
-    // las q tengan la cordenada y menor van primero y los demas despues
-    ArrayList<Entity> entityList = new ArrayList<>();
+    // ── ENTIDADES ─────────────────────────────────────────────────────────────
+    public Item[]   obj     = new Item[50];
+    public Entity[] npc     = new Entity[10];
+    public Entity[] monster = new Entity[10];
 
-    // Estado del juego
-    // dependiendo del estado, se cambia el estado y se dibujan cosas distitnas
-    public int gameState;
-    public int titleState = 0;
-    public int playState = 1;
-    public int pauseState = 2;
-    public int dialogueState = 3;
-    public int winShow = 4;
-    public int winState = 5;
-    public int lostShow = 6;
-    public int lostGame = 7;
-    public int skinSelection = 8;
-    public int skinHairSelection = 9;
-    public int skinShirtSelection = 10;
-    public int skinEyesSelection = 11;
-    // constructor del panel del juego
-    public GamePanel(){
+    public  final LootSystem lootSystem = new LootSystem(this);       // 10
+    private final GameLoop   loop       = new GameLoop(this);         // 11
+
+    // ── AUDIO ─────────────────────────────────────────────────────────────────
+    private final Sound music      = new Sound();
+    private final Sound soundEfect = new Sound();
+
+    // ── MINIJUEGO ACTIVO ──────────────────────────────────────────────────────
+    // Punto de extensión para nuevas pruebas (Objetivo 1).
+    // launchTest(new PruebaMatematicas(), GameState.MATH) y el motor
+    // llama activeTest.startTest() / update() / endTest() automáticamente.
+    private Visual      visualTest;
+    private GameState   previousGameState = GameState.TITLE;
+
+    // ── SISTEMA DE USUARIOS ───────────────────────────────────────────────────
+    private User                      currentUser;
+    private int                       loadingProgress = 0;
+    private boolean                   usersLoaded     = false;
+    private UserProgressManager       userProgressManager;
+    private final UserRepository         userRepository         = new UserRepository();
+    private final UserRegistrationForm   userRegistrationForm   = new UserRegistrationForm();
+    private final UserRegistrationController userRegistrationController =
+                                        new UserRegistrationController(userRegistrationForm);
+    private final UserSelectionMenu      userSelectionMenu      = new UserSelectionMenu();
+    private final UserSelectionController userSelectionController =
+                                        new UserSelectionController(userSelectionMenu);
+
+    // ── ESTADO ────────────────────────────────────────────────────────────────
+    public GameState gameState = GameState.LOADING;
+
+    // ── INPUT ─────────────────────────────────────────────────────────────────
+    // Mouse en view (corregido — antes estaba en domain violando MVC)
+    private final Mouse mouseH = new Mouse(this);
+
+    // ── LISTAS DE RENDERIZADO ─────────────────────────────────────────────────
+    private final ArrayList<Entity> entityList = new ArrayList<>();
+    private final ArrayList<Item>   itemList   = new ArrayList<>();
+
+    // =========================================================================
+    // CONSTRUCTOR
+    // =========================================================================
+    public GamePanel() {
         this.setPreferredSize(new Dimension(screenWidth, screenHeight));
-        this.setBackground(Color.CYAN);
-        this.setDoubleBuffered(true); // doble buffer dibujo graficos primero en memoria y luego a la pantalla, evitando parpadeos
+        this.setBackground(Color.BLACK);
+        this.setDoubleBuffered(true);
         this.addKeyListener(keyH);
+        this.addMouseListener(mouseH);
+        this.addMouseMotionListener(mouseH);
         this.setFocusable(true);
+
+        // Creamos el objeto sin iniciar el test (startTest se llama en launchVisualTest)
+        visualTest = new Visual();
     }
 
-    public void setUpGame(){
+    // =========================================================================
+    // SETUP
+    // =========================================================================
+    public void setUpGame() {
+        player.getPlayerImage();
+        player.getPlayerAttackImage();
         sett.setObject();
         sett.setNPC();
         sett.setMonster();
-        gameState = titleState;
+        registerLootSystem();
+
+        userProgressManager = new UserProgressManager(
+                userRepository,
+                userSelectionMenu.getUsers(),
+                skins,
+                player);
+
+        gameState = GameState.LOADING;
         playMusic(SoundName.MENU);
     }
 
-    public void startGameThread(){
-        gameThread = new Thread(this);
-        gameThread.start(); // para que llame al metodo run
+    private void registerLootSystem() {
+        for (Entity m : monster) {
+            if (m != null) m.setDeathListener(lootSystem);
+        }
     }
+
+    public void startGameThread() { loop.start(); }
+
+    // =========================================================================
+    // LANZAMIENTO Y RETORNO DE MINIJUEGOS — Objetivo 4
+    // =========================================================================
+
+    /**
+     * Lanza el minijuego de linterna desde cualquier estado del motor.
+     * Funciona tanto desde el menú TITLE como desde el Mundo Hub (PLAY).
+     *
+     * Uso desde Key.java (menú):  gp.launchVisualTest()
+     * Uso desde Player (mundo):   gp.launchVisualTest()  via TEST_PORTAL
+     */
+    public void launchVisualTest() {
+        previousGameState = gameState;      // memoriza dónde estaba el jugador
+        visualTest.startTest();             // llama Test.startTest() → onStart()
+        gameState = GameState.VISUAL;
+        stopMusic();
+        playMusic(SoundName.GAME);
+    }
+
+    /**
+     * Devuelve al estado exacto desde donde se lanzó el minijuego.
+     * También puede usarse con ESC para salida anticipada.
+     */
+    public void returnFromVisualTest() {
+        gameState = previousGameState;
+        stopMusic();
+        // Restaurar música según estado de retorno
+        if (previousGameState == GameState.TITLE ||
+            previousGameState == GameState.USER_SELECTION) {
+            playMusic(SoundName.MENU);
+        } else {
+            playMusic(SoundName.GAME); // PLAY u otros estados de mundo
+        }
+        ui.commandNumber = 0;
+    }
+
+    // =========================================================================
+    // UPDATE
+    // =========================================================================
     @Override
-    public void run() {
-        // game Loop
-        // Ponerlo en 60 fps
-        double drawInterval = (double) 1000000000 /fps; //1 segundo en nanos dividido en 60
-        double nextDrawTime = System.nanoTime() + drawInterval;
-        while(gameThread != null){
-            // actualizar informacion
-            update();
-            // redibujar la pantalla con la informacion actualizada
-            repaint();// llamada a paint component
-
-            try {
-                double remainingTime = nextDrawTime - System.nanoTime();
-                remainingTime = remainingTime/1000000;
-                if(remainingTime < 0){
-                    remainingTime = 0;
-                }
-                Thread.sleep((long) remainingTime);
-                nextDrawTime += drawInterval;
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+    public void update() {
+        switch (gameState) {
+            case LOADING        -> updateLoading();
+            case USER_SELECTION -> { /* navegación manejada en Key.java */ }
+            case REGISTER       -> { /* input manejado en Key.java */      }
+            case VISUAL         -> updateVisual();    // ← CORREGIDO: propio case
+            case PLAY           -> updatePlay();
+            case WIN_SHOW       -> updateWinShow();
+            case LOST_SHOW      -> updateLostShow();
+            default             -> { /* TITLE, PAUSE, WIN, LOST, skins */ }
         }
     }
-    public void update(){
-        if(gameState == playState){
-            eHandler.checkEvent();
-            player.update();
-            for(int i = 0; i < npc.length; i++){
-                if(npc[i] != null){
-                    npc[i].update();
-                }
-            }
 
-            for(int i = 0; i < monster.length; i++){
-                if(monster[i] != null){
-                    if(monster[i].alive && !monster[i].dying){
-                        monster[i].update();
-                    }
-                    if(!monster[i].alive){
-                        monster[i] = null;
-                    }
-                }
-            }
-        } else if(gameState == winShow){
-            player.winCounter++;
-            if(player.winCounter > 280){
-                gameState = winState;
-                player.winCounter = 0;
-            }
-        } else if(gameState == lostShow){
-            player.lostCounter++;
-            if(player.lostCounter > 200){
-                player.invincible = false;
-                gameState = lostGame;
-                playMusic(SoundName.DEATH);
-                player.lostCounter = 0;
-            }
+    private void updateLoading() {
+        // CORRECCIÓN: ya no contiene lógica de VISUAL (estado distinto)
+        if (!usersLoaded) {
+            userSelectionMenu.setUsers(userRepository.loadUsers());
+            usersLoaded = true;
         }
-
+        loadingProgress = Math.min(loadingProgress + 1, 100);
+        if (loadingProgress >= 100) {
+            gameState = GameState.USER_SELECTION;
+        }
     }
-    public void retry(){
+
+    /**
+     * Tick del minijuego de linterna.
+     * Visual.update() detecta el fin y llama ConsoleLogger internamente.
+     */
+    private void updateVisual() {
+        visualTest.update();
+        // Retorno automático 2 segundos después de completar el test
+        if (visualTest.isTestCompleted() && visualTest.shouldReturnToGame(2000)) {
+            returnFromVisualTest();
+        }
+    }
+
+    private void updatePlay() {
+        eHandler.checkEvent();
+        player.update();
+        for (Entity e : npc) { if (e != null) e.update(); }
+        updateMonsters();
+    }
+
+    private void updateWinShow() {
+        player.incrementWinCounter();
+        if (player.getWinCounter() > 280) {
+            gameState = GameState.WIN;
+            player.setWinCounter(0);
+        }
+    }
+
+    private void updateLostShow() {
+        player.incrementLostCounter();
+        if (player.getLostCounter() > 200) {
+            player.setInvincible(false);
+            gameState = GameState.LOST;
+            playMusic(SoundName.DEATH);
+            player.setLostCounter(0);
+        }
+    }
+
+    private void updateMonsters() {
+        for (int i = 0; i < monster.length; i++) {
+            if (monster[i] == null) continue;
+            if (monster[i].isAlive() && !monster[i].isDying()) monster[i].update();
+            if (!monster[i].isAlive()) monster[i] = null;
+        }
+    }
+
+    // =========================================================================
+    // RETRY
+    // =========================================================================
+    public void retry() {
         player.setDefaultValues();
+        player.getPlayerImage();
         sett.setObject();
         sett.setNPC();
         sett.setMonster();
-        gameState = playState;
+        registerLootSystem();
+        applyCurrentUserProgress();
+        gameState = GameState.PLAY;
     }
-    // Dibujar
-    public void paintComponent(Graphics g){
 
+    // =========================================================================
+    // RENDERIZADO — Algoritmo del Pintor
+    // =========================================================================
+    @Override
+    public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        Graphics2D g2 = (Graphics2D)g; // para tener mas control de las formas
-        // Debug
+        Graphics2D g2 = (Graphics2D) g;
         long drawStart = 0;
-        if(keyH.checkDrawTime == true){
-            drawStart = System.nanoTime();
+        if (keyH.checkDrawTime) drawStart = System.nanoTime();
+
+        renderFrame(g2); // gestiona TODOS los estados, incluyendo VISUAL
+
+        if (keyH.checkDrawTime) {
+            long passed = System.nanoTime() - drawStart;
+            g2.setColor(Color.WHITE);
+            g2.setFont(g2.getFont().deriveFont(Font.PLAIN, 12f));
+            g2.drawString("Draw: " + passed + "ns", 10, 400);
         }
-        // pantalla de menu
-        if(gameState == titleState){
+        // CORREGIDO: eliminado el "else if (VISUAL)" duplicado que estaba aquí
+        g2.dispose();
+    }
+
+    private void renderFrame(Graphics2D g2) {
+        // CORRECCIÓN: VISUAL añadido a isMenuState() → Ui.draw() lo maneja
+        // correctamente con VisualDrawer sin dibujar el mundo debajo
+        if (isMenuState()) {
             ui.draw(g2);
-        } else{
-            tileM.draw(g2);
-            //agregar las entidades a la lista
-            entityList.add(player);
-            for(int i = 0; i < npc.length; i ++){
-                if(npc[i] != null){
-                    entityList.add(npc[i]);
-                }
-            }
-            for(int i = 0; i < obj.length; i++){
-                if(obj[i] != null){
-                    entityList.add(obj[i]);
-                }
-            }
-            for(int i = 0; i < monster.length; i++){
-                if(monster[i] != null){
-                    entityList.add(monster[i]);
-                }
-            }
-            // ponerlos en orden
-            Collections.sort(entityList, new Comparator<Entity>() {
-                @Override
-                public int compare(Entity e1, Entity e2){
-                    int result = Integer.compare(e1.worldY, e2.worldY);
-
-                    return result;
-
-                }
-            });
-            //dibujar entidades
-            for(int i = 0; i < entityList.size(); i++){
-                entityList.get(i).draw(g2);
-            }
-            //borramos la lista ya que si no se hara cada vez mas grande
-            entityList.clear();
-
-            ui.draw(g2);
+            return;
         }
-
-        // debug
-        if(keyH.checkDrawTime == true){
-            long drawEnd = System.nanoTime();
-            long passed = drawEnd - drawStart;
-            g2.setColor(Color.white);
-            g2.drawString("Draw Time: " + passed, 10, 400);
-            System.out.println("Draw Time: " + passed);
+        // Estado PLAY, PAUSE, WIN, LOST, etc. → dibujar mundo
+        tileM.draw(g2);
+        collectEntities();
+        entityList.sort(Comparator.comparingInt(Entity::getWorldY));
+        for (Entity e : entityList) {
+            if (e instanceof Player p) renderer.draw(p, g2);
+            else                        renderer.draw(e, g2);
         }
-        g2.dispose(); //liberar recursos del sistema (Buena practica)
+        entityList.clear();
+        ui.draw(g2);
+        collectItems();
+        itemList.sort(Comparator.comparingInt(Item::getWorldY));
+        for (Item item : itemList) drawItem(item, g2);
+        itemList.clear();
     }
-    public void playMusic(SoundName name){
-        music.setFile(name);
-        music.play();
-        music.loop();
+
+    /**
+     * CORREGIDO: VISUAL incluido → el motor no dibuja el mundo debajo del minijuego.
+     * Ui.draw() enruta correctamente a VisualDrawer cuando gameState == VISUAL.
+     */
+    private boolean isMenuState() {
+        return switch (gameState) {
+            case TITLE, SKIN_SELECTION, SKIN_HAIR_SELECTION,
+                 SKIN_SHIRT_SELECTION, SKIN_EYES_SELECTION,
+                 LOADING, USER_SELECTION, REGISTER, VISUAL -> true;
+            default -> false;
+        };
     }
-    public void stopMusic(){
-        music.stop();
+
+    private void collectEntities() {
+        entityList.add(player);
+        for (Entity e : npc)     { if (e != null) entityList.add(e); }
+        for (Entity e : monster) { if (e != null) entityList.add(e); }
     }
-    //para efectos de sonido
-    public void playSE(SoundName name){
-        soundEfect.setFile(name);
-        soundEfect.play();
+
+    private void collectItems() {
+        for (Item item : obj) { if (item != null) itemList.add(item); }
     }
+
+    private void drawItem(Item item, Graphics2D g2) {
+        int sx = computeScreenX(item.getWorldX());
+        int sy = computeScreenY(item.getWorldY());
+        BufferedImage img = ImageGetter.getObjects()[item.getType().getIndex()];
+        if (img != null) g2.drawImage(img, sx, sy, null);
+    }
+
+    // =========================================================================
+    // PROYECCIÓN MUNDO → PANTALLA
+    // =========================================================================
+    public int computeScreenX(int worldX) {
+        int x = worldX - player.getWorldX() + player.getScreenX();
+        if (player.getScreenX() > player.getWorldX()) x = worldX;
+        if (screenWidth - player.getScreenX() > worldWidth - player.getWorldX())
+            x = screenWidth - (worldWidth - worldX);
+        return x;
+    }
+
+    public int computeScreenY(int worldY) {
+        int y = worldY - player.getWorldY() + player.getScreenY();
+        if (player.getScreenY() > player.getWorldY()) y = worldY;
+        if (screenHeight - player.getScreenY() > worldHeight - player.getWorldY())
+            y = screenHeight - (worldHeight - worldY);
+        return y;
+    }
+
+    // =========================================================================
+    // GETTERS DE SISTEMAS (para Key.java y otros colaboradores)
+    // =========================================================================
+    public Visual                    getVisualTest()                   { return visualTest; }
+    public User                      getCurrentUser()                  { return currentUser; }
+    public void                      setCurrentUser(User user)         { this.currentUser = user; }
+    public void                      updateCurrentUserProgress()       { userProgressManager.saveProgress(currentUser); }
+    public void                      applyCurrentUserProgress()        { userProgressManager.applyProgress(currentUser); }
+    public UserSelectionMenu         getUserSelectionMenu()            { return userSelectionMenu; }
+    public UserSelectionController   getUserSelectionController()      { return userSelectionController; }
+    public UserRegistrationForm      getUserRegistrationForm()         { return userRegistrationForm; }
+    public UserRegistrationController getUserRegistrationController()  { return userRegistrationController; }
+    public int                       getLoadingProgress()              { return loadingProgress; }
+    public void                      setLoadingProgress(int v)         { this.loadingProgress = v; }
+
+    public void addUserToSelection(User user) {
+        userSelectionMenu.addUser(user);
+        userProgressManager.saveProgress(user);
+    }
+    public void selectLastCreatedUser() { userSelectionMenu.selectLastUser(); }
+    public void deleteSelectedUser() {
+        userSelectionMenu.removeSelectedUser();
+        userRepository.saveUsers(userSelectionMenu.getUsers());
+        currentUser = null;
+    }
+
+    // =========================================================================
+    // AUDIO
+    // =========================================================================
+    public void playMusic(SoundName name) { music.setFile(name); music.play(); music.loop(); }
+    public void stopMusic()               { music.stop(); }
+    public void playSE(SoundName name)    { soundEfect.setFile(name); soundEfect.play(); }
 }

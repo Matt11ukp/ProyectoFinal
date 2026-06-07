@@ -4,60 +4,57 @@ import edu.unl.cc.ama.view.GamePanel;
 
 import java.util.Random;
 
-public class NpcOldMan extends Entity{
+public class NpcOldMan extends Entity {
+
+    private static final Random RANDOM = new Random();
+
     public NpcOldMan(GamePanel gp) {
         super(gp);
-        this.gp = gp;
-        direction = "down";
-        speed = 1;
-        getImage();
-        setDialogue();
+
+        setDirection("down");
+        setSpeed(1);
+        setType(EntityType.NPC);
+
+        loadImages();
+        loadDialogues();
     }
-    public void getImage(){
-        down1 = setup("/npc/oldman_down_1", gp.tileSize, gp.tileSize);
-        down2 = setup("/npc/oldman_down_2", gp.tileSize, gp.tileSize);
-        left1 = setup("/npc/oldman_left_1", gp.tileSize, gp.tileSize);
-        left2 = setup("/npc/oldman_left_2", gp.tileSize, gp.tileSize);
+
+    private void loadImages() {
+        down1  = setup("/npc/oldman_down_1",  gp.tileSize, gp.tileSize);
+        down2  = setup("/npc/oldman_down_2",  gp.tileSize, gp.tileSize);
+        left1  = setup("/npc/oldman_left_1",  gp.tileSize, gp.tileSize);
+        left2  = setup("/npc/oldman_left_2",  gp.tileSize, gp.tileSize);
         right1 = setup("/npc/oldman_right_1", gp.tileSize, gp.tileSize);
         right2 = setup("/npc/oldman_right_2", gp.tileSize, gp.tileSize);
-        up1 = setup("/npc/oldman_up_1", gp.tileSize, gp.tileSize);
-        up2 = setup("/npc/oldman_up_2", gp.tileSize, gp.tileSize);
+        up1    = setup("/npc/oldman_up_1",    gp.tileSize, gp.tileSize);
+        up2    = setup("/npc/oldman_up_2",    gp.tileSize, gp.tileSize);
     }
-    public void setDialogue(){
-        dialogues[0] = "Hola, aventurero";
-        dialogues[1] = "Deseas Encontrar el tesoro perdido de esta isla??";
-        dialogues[2] = "Puedes moverte con A, W, S, D o con las flechas";
-        dialogues[3] = "Con ESC puedes pausar el juego";
-        dialogues[4] = "Con enter atacaras a enemigos y con espacio podras hacer un dash";
-        dialogues[5] = "Tienes que tener cuidado con los slimes\n aunque estos te pueden dar objetos utiles para tu proposito";
-        dialogues[6] = "Buena suerte!!";
-    }
-    public void setAction(){
 
+    private void loadDialogues() {
+        setDialogue(0, "Hola, aventurero");
+        setDialogue(1, "¿Deseas encontrar el tesoro perdido de esta isla?");
+        setDialogue(2, "Puedes moverte con A, W, S, D o con las flechas");
+        setDialogue(3, "Con ESC puedes pausar el juego");
+        setDialogue(4, "Con Enter atacarás a enemigos y con Espacio podrás hacer un dash");
+        setDialogue(5, "Ten cuidado con los slimes — aunque te pueden dar objetos útiles");
+        setDialogue(6, "¡Buena suerte!");
+    }
+
+    @Override
+    public void setAction() {
         actionLockCounter++;
-        if(actionLockCounter == 120){
-            Random random = new Random();
-            // un numero aleatorio de 1 a 100
-            int i = random.nextInt(100)+1;
-            // sistema de ia muy simple
-            // 25% de posibilidad para cada posicion
-            if(i <= 25){
-                direction = "up";
-            }
-            if(i > 25 && i <= 50){
-                direction = "down";
-            }
-            if(i > 50 && i <= 75){
-                direction = "left";
-            }
-            if(i >75 && i <= 100){
-                direction = "right";
-            }
+        if (actionLockCounter >= 120) {
+            int roll = RANDOM.nextInt(100) + 1;
+            if      (roll <= 25)  setDirection("up");
+            else if (roll <= 50)  setDirection("down");
+            else if (roll <= 75)  setDirection("left");
+            else                  setDirection("right");
             actionLockCounter = 0;
         }
-
     }
-    public void speak(){
+
+    @Override
+    public void speak() {
         super.speak();
     }
 }

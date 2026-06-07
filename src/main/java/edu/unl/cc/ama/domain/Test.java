@@ -1,36 +1,60 @@
 package edu.unl.cc.ama.domain;
 
 public abstract class Test {
-    protected Instruction actualInstruction;
+
+    protected int successes;
+    protected int mistakes;
     protected boolean testCompleted;
-    protected int currentSuccesses = 0;
-    protected int currentMistakes = 0;
-    protected double currentTime = 0;
 
-    public Test(Instruction actualInstruction, boolean testCompleted) {
-        this.actualInstruction = actualInstruction;
-        this.testCompleted = testCompleted;
+    private long startTime;
+    private long endTime;
+
+    public Test() {
+        successes = 0;
+        mistakes = 0;
+        testCompleted = false;
     }
 
-    public void startTest(){
-
-    }
-    public GameResult endTest(){
-        return new GameResult(currentSuccesses, currentMistakes, currentTime);
-    }
-    public Instruction getActualInstruction() {
-        return actualInstruction;
+    public void startTest() {
+        successes = 0;
+        mistakes = 0;
+        testCompleted = false;
+        startTime = System.currentTimeMillis();
+        onStart();
     }
 
-    public void setActualInstruction(Instruction actualInstruction) {
-        this.actualInstruction = actualInstruction;
+    public GameResult endTest() {
+        endTime = System.currentTimeMillis();
+        testCompleted = true;
+
+        return new GameResult(successes, mistakes, getElapsedTime());
+    }
+
+    protected void addSuccess() {
+        successes++;
+    }
+
+    protected void addMistake() {
+        mistakes++;
+    }
+
+    private double getElapsedTime() {
+        return (endTime - startTime) / 1000.0;
     }
 
     public boolean isTestCompleted() {
         return testCompleted;
     }
 
-    public void setTestCompleted(boolean testCompleted) {
-        this.testCompleted = testCompleted;
+    public int getSuccesses() {
+        return successes;
     }
+
+    public int getMistakes() {
+        return mistakes;
+    }
+
+    protected abstract void onStart();
+
+    public abstract void update();
 }

@@ -1,4 +1,4 @@
-package edu.unl.cc.ama.domain;
+package edu.unl.cc.ama.view;
 
 import java.awt.image.BufferedImage;
 

@@ -1,287 +1,226 @@
 package edu.unl.cc.ama.domain;
 
-import edu.unl.cc.ama.domain.objects.ObjectBoots;
-import edu.unl.cc.ama.domain.objects.ObjectKey;
 import edu.unl.cc.ama.view.GamePanel;
 import edu.unl.cc.ama.view.SoundName;
 import edu.unl.cc.ama.view.UtilityTool;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
 public abstract class Entity {
-    GamePanel gp;
-    public int worldX, worldY;
-    public int speed;
 
-    public BufferedImage down, down1, down2, up, up1, up2, right1, right2, left1, left2; // imagen con datos accesibles para su lectura
-    public BufferedImage attackUp1, attackUp2, attackDown1, attackDown2, attackLeft1, attackLeft2, attackRight1, attackRight2;
-    public String direction;
+    protected GamePanel gp;
 
-    public int spriteCounter = 0;
-    public int spriteNum = 1;
-    // area solida default
-    public Rectangle solidArea = new Rectangle(0, 0, 32, 32);
-    public Rectangle attackArea = new Rectangle(0, 0, 0, 0);
-    public int solidAreaDefaultX, solidAreaDefaultY;
+    private DeathListener deathListener;
 
-    public boolean dropsBoots = false;
-    public boolean colissionOn = false;
-    public int actionLockCounter = 0;
-    public boolean invincible = false;
-    public boolean attacking = false;
-    public boolean alive = true;
-    public boolean dying = false;
-    public boolean hpBarOn = false;
-    public int hpBarCounter = 0;
-    int dyingCounter = 0;
-    public int invincibleCounter = 0;
-    String dialogues[] = new String[20];
-    int dialogueIndex = 0;
-    // estado del personaje
-    public int maxLife;
-    public int life;
+    protected int worldX, worldY;
+    protected int speed;
+    protected String direction;
 
-    public BufferedImage image, image2, image3;
-    public String name;
-    public boolean collision = false;
-    public int type; // 0 player and 1 npc and 2 is monster
-    public String directionObject = "down"; // los objetos siempre van hacia abajo
+    protected BufferedImage down, down1, down2;
+    protected BufferedImage up, up1, up2;
+    protected BufferedImage left1, left2;
+    protected BufferedImage right1, right2;
+    protected BufferedImage attackUp1, attackUp2;
+    protected BufferedImage attackDown1, attackDown2;
+    protected BufferedImage attackLeft1, attackLeft2;
+    protected BufferedImage attackRight1, attackRight2;
 
-    public Entity(GamePanel gp){
+    protected int spriteCounter = 0;
+    protected int spriteNum     = 1;
+
+    protected Rectangle solidArea = new Rectangle(0, 0, 32, 32);
+    protected Rectangle attackArea = new Rectangle(0, 0, 0, 0);
+    protected int solidAreaDefaultX;
+    protected int solidAreaDefaultY;
+    protected boolean colissionOn = false;
+
+    private int maxLife;
+    private int life;
+    private boolean invincible = false;
+    private boolean attacking  = false;
+    private boolean alive = true;
+    private boolean dying = false;
+    private boolean dropsBoots = false;
+    private int invincibleCounter = 0;
+    private int dyingCounter = 0;
+    private boolean hpBarOn = false;
+
+    private EntityType type;
+    private String name;
+
+    private boolean collision = false;
+
+    private final String[] dialogues = new String[20];
+    private int dialogueIndex = 0;
+
+    protected int actionLockCounter = 0;
+
+    protected Entity(GamePanel gp) {
         this.gp = gp;
     }
 
-
-    public void damageReaction(){}
-    public void speak(){
-        if(dialogues[dialogueIndex] == null){
-            dialogueIndex = 0;
-        }
-        gp.ui.currentDialogue = dialogues[dialogueIndex];
-        dialogueIndex++;
-        switch(gp.player.direction){
-            case "up":
-                direction = "down";
-                break;
-            case "down":
-                direction = "up";
-                break;
-            case "left":
-                direction = "right";
-                break;
-            case "right":
-                direction = "left";
-                break;
-        }
-
+    public void setDeathListener(DeathListener listener) {
+        this.deathListener = listener;
     }
-    //para que todos se actualizen
-    public void update(){
+
+    public void setAction() { }
+    public void damageReaction() { }
+
+    public void update() {
         setAction();
         colissionOn = false;
         gp.cChecker.checkTile(this);
         gp.cChecker.checkObject(this, false);
         gp.cChecker.checkEntity(this, gp.npc);
         gp.cChecker.checkEntity(this, gp.monster);
+
         boolean contactPlayer = gp.cChecker.checkPlayer(this);
-        if(this.type == 2 && contactPlayer == true){
-            if(gp.player.invincible == false){
-                //danio
-                gp.playSE(SoundName.RECEIVE_DAMAGE);
-                gp.player.life -= 1;
-                gp.player.invincible = true;
-            }
+
+        if (type == EntityType.MONSTER && contactPlayer && !gp.player.isInvincible()) {
+            gp.playSE(SoundName.RECEIVE_DAMAGE);
+            gp.player.decreaseLife(1);
+            gp.player.setInvincible(true);
         }
-        if(colissionOn == false){
+
+        if (!colissionOn) {
             switch (direction) {
-                case "up": worldY -= speed; break;
-                case "down": worldY += speed; break;
-                case "left": worldX -= speed; break;
-                case "right": worldX += speed; break;
+                case "up"    -> worldY -= speed;
+                case "down"  -> worldY += speed;
+                case "left"  -> worldX -= speed;
+                case "right" -> worldX += speed;
             }
         }
+
         spriteCounter++;
-        if(spriteCounter > 10){
-            if(spriteNum == 1){
-                spriteNum = 2;
-            } else if(spriteNum == 2){
-                spriteNum = 1;
-            }
+        if (spriteCounter > 10) {
+            spriteNum     = (spriteNum == 1) ? 2 : 1;
             spriteCounter = 0;
         }
-        if(invincible == true){
+
+        if (invincible) {
             invincibleCounter++;
-            if(invincibleCounter > 40){
-                invincible = false;
+            if (invincibleCounter > 40) {
+                invincible        = false;
                 invincibleCounter = 0;
             }
         }
     }
 
-    public void setAction() {
-    }
+    public void speak() {
+        if (dialogues[dialogueIndex] == null) dialogueIndex = 0;
+        gp.ui.currentDialogue = dialogues[dialogueIndex];
+        dialogueIndex++;
 
-    public void draw(Graphics2D g2){
-        BufferedImage image = null;
-        int screenX = worldX - gp.player.worldX + gp.player.screenX;
-        int screenY = worldY - gp.player.worldY + gp.player.screenY;
-        if(gp.player.screenX > gp.player.worldX){
-            screenX = worldX;
-        }
-        if(gp.player.screenY > gp.player.worldY){
-            screenY = worldY;
-        }
-        // limite abajo y derecho
-        int rightOffSett = gp.screenWidth - gp.player.screenX;
-        if(rightOffSett > gp.maxWorldCol * gp.tileSize - gp.player.worldX){
-            screenX = gp.screenWidth - (gp.maxWorldCol * gp.tileSize - worldX);
-        }
-        int bottomOffSett = gp.screenHeight - gp.player.screenY;
-        if(bottomOffSett > gp.maxWorldRow * gp.tileSize - gp.player.worldY){
-            screenY = gp.screenHeight - (gp.maxWorldRow * gp.tileSize - worldY);
-        }
-        boolean inCamera = worldX + gp.tileSize > gp.player.worldX - gp.player.screenX &&
-                worldX - gp.tileSize < gp.player.worldX + gp.player.screenX &&
-                worldY + gp.tileSize > gp.player.worldY - gp.player.screenY &&
-                worldY - gp.tileSize < gp.player.worldY + gp.player.screenY;
-
-        boolean atEdge = gp.player.screenX > gp.player.worldX ||
-                gp.player.screenY > gp.player.worldY ||
-                rightOffSett > gp.maxWorldCol * gp.tileSize - gp.player.worldX ||
-                bottomOffSett > gp.maxWorldRow * gp.tileSize - gp.player.worldY;
-        // dibuja los tiles solamente mientres esten en la vision del jugador (optimizar)
-        if(inCamera == true || atEdge == true) {
-            if(direction == "up"){
-                if(spriteNum == 1){
-                    image = up1;
-                }
-                if(spriteNum == 2){
-                    image = up2;
-                }
-            } else if(direction == "left"){
-                if(spriteNum == 1){
-                    image = left1;
-                }
-                if(spriteNum == 2){
-                    image = left2;
-                }
-            } else if(direction == "right"){
-                if(spriteNum == 1){
-                    image = right1;
-                }
-                if(spriteNum == 2){
-                    image = right2;
-                }
-            } else if(direction == "down"){
-                if(spriteNum == 1){
-                    image = down1;
-                }
-                if(spriteNum == 2){
-                    image = down2;
-                }
-            }
-            // barra de vida del monstruo
-            // si es un monstruo
-            if(type == 2 && hpBarOn == true){
-
-                double oneScale = (double)gp.tileSize/maxLife;
-                double hpBarValue = oneScale * life;
-
-                g2.setColor(new Color(35, 35, 35));
-                g2.fillRect(screenX - 1, screenY - 16, gp.tileSize + 2, 12);
-
-                g2.setColor(new Color(255, 0, 30));
-                g2.fillRect(screenX, screenY - 15, (int)hpBarValue, 10);
-
-                // luego de 10 segundos la barra desaparece
-                hpBarCounter++;
-                if(hpBarCounter > 600){
-                    hpBarCounter = 0;
-                    hpBarOn = false;
-                }
-            }
-
-            if(invincible == true){
-                //hacer al jugador medio invisible cuando tiene dabio
-                hpBarOn = true;
-                hpBarCounter = 0;
-                changeAlpha(g2, 0.4f);
-            }
-            if(dying == true){
-                dyingAnimation(g2);
-            }
-            g2.drawImage(image, screenX , screenY, gp.tileSize, gp.tileSize, null);
-            changeAlpha(g2, 1f);
+        switch (gp.player.getDirection()) {
+            case "up"    -> direction = "down";
+            case "down"  -> direction = "up";
+            case "left"  -> direction = "right";
+            case "right" -> direction = "left";
         }
     }
-    public void dyingAnimation(Graphics2D g2){
-        int i = 5;
+
+    public void incrementDyingCounter() {
         dyingCounter++;
-        if(dyingCounter <= i){
-            changeAlpha(g2, 0f);
-        }
-        if(dyingCounter > i && dyingCounter <= i * 2){
-            changeAlpha(g2, 1f);
-        }
-        if(dyingCounter > i * 2 && dyingCounter <= i * 3){
-            changeAlpha(g2, 0f);
-        }
-        if(dyingCounter > i * 3 && dyingCounter <= i * 4){
-            changeAlpha(g2, 1f);
-        }
-        if(dyingCounter > i * 4 && dyingCounter <= i * 5){
-            changeAlpha(g2, 0f);
-        }
-        if(dyingCounter > i * 5 && dyingCounter <= i * 6){
-            changeAlpha(g2, 1f);
-        }
-        if(dyingCounter > i * 6 && dyingCounter <= i * 7){
-            changeAlpha(g2, 0f);
-        }
-        if(dyingCounter > i * 7 && dyingCounter <= i * 8){
-            changeAlpha(g2, 1f);
-        }
-        if(dyingCounter > i * 8){
-            dying = false;
-            alive = false;
-            if(dropsBoots == true){
-                for(int j = 0; j < gp.obj.length; j++){
-                    if(gp.obj[j] == null){
-                        gp.obj[j] = new ObjectBoots(gp);
-                        gp.obj[j].worldX = worldX;
-                        gp.obj[j].worldY = worldY;
-                        break;
-                    }
-                }
-            } else{
-                // mira los espacios de objetos
-                for(int j = 0; j < gp.obj.length; j++){
-                    // si llega a un espacio vacio, se lo asigna a la nueva llave (el loot)
-                    if(gp.obj[j] == null){
-                        gp.obj[j] = new ObjectKey(gp);
-                        gp.obj[j].worldX = worldX;
-                        gp.obj[j].worldY = worldY;
-                        break; // rompe el ciclo pa que no llene de llaves el mapa
-                    }
-                }
-            }
+    }
+
+    public void triggerDeath() {
+        dying = false;
+        alive = false;
+        notifyDeath();
+    }
+
+    private void notifyDeath() {
+        if (deathListener != null) {
+            deathListener.onEntityDied(this, dropsBoots, worldX, worldY);
         }
     }
-    public void changeAlpha(Graphics2D g2, float alphaValue){
-        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alphaValue));
-    }
-    public BufferedImage setup(String imageName, int width, int Height){
-        UtilityTool uTool = new UtilityTool();
-        BufferedImage image = null;
-        try{
-            image = ImageIO.read(getClass().getResourceAsStream(imageName + ".png"));
-            image = uTool.scaleImage(image, width, Height);
-        } catch(IOException e){
+
+    protected BufferedImage setup(String imageName, int width, int height) {
+        try {
+            BufferedImage raw = ImageIO.read(
+                getClass().getResourceAsStream(imageName + ".png"));
+            return UtilityTool.scaleImage(raw, width, height);
+        } catch (IOException e) {
             e.printStackTrace();
+            return null;
         }
-        return image;
+    }
+
+    public int  getWorldX() { return worldX; }
+    public void setWorldX(int v) { this.worldX = v; }
+    public int  getWorldY() { return worldY; }
+    public void setWorldY(int v) { this.worldY = v; }
+
+    public int getSpeed() { return speed; }
+    public void setSpeed(int v) { this.speed = v; }
+    public String getDirection() { return direction; }
+    public void setDirection(String v) { this.direction = v; }
+
+    public int  getMaxLife() { return maxLife; }
+    public void setMaxLife(int v) { this.maxLife = v; }
+    public int  getLife() { return life; }
+    public void setLife(int v) { this.life = v; }
+    public void decreaseLife(int amt) { this.life -= amt; }
+
+    public boolean isInvincible() { return invincible; }
+    public void setInvincible(boolean v) { this.invincible = v; }
+    public boolean isAttacking() { return attacking; }
+    public void setAttacking(boolean v) { this.attacking = v; }
+    public boolean isAlive() { return alive; }
+    public void setAlive(boolean v) { this.alive = v; }
+    public boolean isDying() { return dying; }
+    public void setDying(boolean v) { this.dying = v; }
+    public boolean isDropsBoots() { return dropsBoots; }
+    public void setDropsBoots(boolean v) { this.dropsBoots = v; }
+
+    public int  getInvincibleCounter() { return invincibleCounter; }
+    public void setInvincibleCounter(int v) { this.invincibleCounter = v; }
+    public int  getDyingCounter() { return dyingCounter; }
+
+    public boolean isHpBarOn() { return hpBarOn; }
+    public void setHpBarOn(boolean v) { this.hpBarOn = v; }
+
+    public EntityType getType() { return type; }
+    public void setType(EntityType v) { this.type = v; }
+    public String getName() { return name; }
+    public void setName(String v) { this.name = v; }
+
+    public boolean isCollision() { return collision; }
+    public void setCollision(boolean v) { this.collision = v; }
+    public Rectangle getSolidArea() { return solidArea; }
+    public Rectangle getAttackArea() { return attackArea; }
+    public int getSolidAreaDefaultX() { return solidAreaDefaultX; }
+    public int getSolidAreaDefaultY() { return solidAreaDefaultY; }
+    public boolean isColissionOn() { return colissionOn; }
+    public void setColissionOn(boolean v) { this.colissionOn = v; }
+
+    public int getSpriteNum() { return spriteNum; }
+    public int getSpriteCounter() { return spriteCounter; }
+
+    public BufferedImage getDown() { return down; }
+    public BufferedImage getDown1() { return down1; }
+    public BufferedImage getDown2() { return down2; }
+    public BufferedImage getUp() { return up; }
+    public BufferedImage getUp1() { return up1; }
+    public BufferedImage getUp2() { return up2; }
+    public BufferedImage getLeft1() { return left1; }
+    public BufferedImage getLeft2() { return left2; }
+    public BufferedImage getRight1() { return right1; }
+    public BufferedImage getRight2() { return right2; }
+
+    public BufferedImage getAttackUp1() { return attackUp1; }
+    public BufferedImage getAttackUp2() { return attackUp2; }
+    public BufferedImage getAttackDown1() { return attackDown1; }
+    public BufferedImage getAttackDown2() { return attackDown2; }
+    public BufferedImage getAttackLeft1() { return attackLeft1; }
+    public BufferedImage getAttackLeft2() { return attackLeft2; }
+    public BufferedImage getAttackRight1() { return attackRight1; }
+    public BufferedImage getAttackRight2() { return attackRight2; }
+
+    protected void setDialogue(int index, String text) {
+        if (index >= 0 && index < dialogues.length) dialogues[index] = text;
     }
 }

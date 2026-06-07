@@ -1,19 +1,29 @@
 package edu.unl.cc.ama.view;
 
-import edu.unl.cc.ama.domain.Entity;
-import edu.unl.cc.ama.domain.objects.ObjectHeart;
-import edu.unl.cc.ama.domain.objects.ObjectKey;
-
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontFormatException;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+
+import edu.unl.cc.ama.domain.Entity;
+import edu.unl.cc.ama.domain.objects.Item;
+import edu.unl.cc.ama.domain.objects.ObjectHeart;
+import edu.unl.cc.ama.domain.objects.ObjectKey;
 
 public class Ui {
     Avatar skins;
     GamePanel gp;
     Graphics2D g2;
     Font pixel;
+    private LoadingScreenDrawer loadingScreenDrawer = new LoadingScreenDrawer();
+    private UserRegistrationDrawer userRegistrationDrawer;
+    private UserSelectionDrawer userSelectionDrawer;
+    private VisualDrawer visualDrawer;
+
     BufferedImage heartFull, heartHalf, heartBlank, keyImage;
     public boolean messageOn = false;
     public String message = "";
@@ -25,6 +35,9 @@ public class Ui {
 
     public Ui(GamePanel gp){
         this.gp = gp;
+        userSelectionDrawer = new UserSelectionDrawer();
+        userRegistrationDrawer = new UserRegistrationDrawer();
+        visualDrawer = new VisualDrawer(gp);
         // lo hacemos antes del draw para optimizar
         InputStream is = getClass().getResourceAsStream("/fonts/LowresPixel-Regular.otf");
         try{
@@ -35,12 +48,12 @@ public class Ui {
             e.printStackTrace();
         }
         // HUD object
-        Entity heart = new ObjectHeart(gp);
-        heartFull = heart.image;
-        heartHalf = heart.image2;
-        heartBlank = heart.image3;
-        Entity key = new ObjectKey(gp);
-        keyImage = key.down1;
+        Item heart = new ObjectHeart();
+        heartFull = ImageGetter.getObjects()[4];
+        heartHalf = gp.skins.image.getObjects()[5];
+        heartBlank = gp.skins.image.getObjects()[6];
+        Item key = new ObjectKey();
+        keyImage = ImageGetter.getObjects()[7];
     }
     public void showMessage(String text){
         message = text;
@@ -51,54 +64,71 @@ public class Ui {
         g2.setFont(pixel);
         g2.setColor(Color.white);
         //Menu
-        if(gp.gameState == gp.titleState){
+        if(gp.gameState == GameState.LOADING){
+            loadingScreenDrawer.draw(g2, gp.screenWidth, gp.screenHeight, gp.getLoadingProgress());
+            return;
+        }
+        if(gp.gameState == GameState.VISUAL){
+            // Objetivo 4: VisualDrawer recibe (g2, gp, visual) — firma correcta
+            visualDrawer.draw(g2, gp, gp.getVisualTest());
+            return;
+        }
+        if(gp.gameState == GameState.USER_SELECTION){
+            userSelectionDrawer.draw(g2, gp.getUserSelectionMenu(), gp.screenWidth, gp.screenHeight);
+            return;
+        }
+        if(gp.gameState == GameState.REGISTER){
+            userRegistrationDrawer.draw(g2, gp.getUserRegistrationForm(), gp.screenWidth, gp.screenHeight);
+            return;
+        }
+        if(gp.gameState == GameState.TITLE){
             drawTitleScreen();
         }
 
-        if(gp.gameState == gp.playState){
+        if(gp.gameState == GameState.PLAY){
             drawPlayerLife();
-            if(gp.player.keyNum > 0){
+            if(gp.player.getKeyNum() > 0){
                 drawKeys();
             }
         }
-        if(gp.gameState == gp.pauseState){
+        if(gp.gameState == GameState.PAUSE){
             drawPlayerLife();
             drawPauseScreen();
-            if(gp.player.keyNum > 0){
+            if(gp.player.getKeyNum() > 0){
                 drawKeys();
             }
         }
-        if(gp.gameState == gp.dialogueState){
+        if(gp.gameState == GameState.DIALOGUE){
             drawPlayerLife();
             drawDialogueScreen();
-            if(gp.player.keyNum > 0){
+            if(gp.player.getKeyNum() > 0){
                 drawKeys();
             }
         }
-        if(gp.gameState == gp.winShow){
+        if(gp.gameState == GameState.WIN_SHOW){
             gp.stopMusic();
             winShowing();
         }
-        if(gp.gameState == gp.winState){
+        if(gp.gameState == GameState.WIN){
             gp.stopMusic();
             winScreen();
         }
-        if(gp.gameState == gp.lostShow){
+        if(gp.gameState == GameState.LOST_SHOW){
             lostShowing();
         }
-        if(gp.gameState == gp.lostGame){
+        if(gp.gameState == GameState.LOST){
             lostScreen();
         }
-        if(gp.gameState == gp.skinSelection){
+        if(gp.gameState == GameState.SKIN_SELECTION){
             skinCustomization();
         }
-        if(gp.gameState == gp.skinHairSelection){
+        if(gp.gameState == GameState.SKIN_HAIR_SELECTION){
             hairSelection();
         }
-        if(gp.gameState == gp.skinShirtSelection){
+        if(gp.gameState == GameState.SKIN_SHIRT_SELECTION){
             shirtSelection();
         }
-        if(gp.gameState == gp.skinEyesSelection){
+        if(gp.gameState == GameState.SKIN_EYES_SELECTION){
             eyesSelection();
         }
     }
@@ -108,14 +138,14 @@ public class Ui {
         g2.drawImage(keyImage, x, y, null);
         g2.setFont(g2.getFont().deriveFont(Font.BOLD, 64F));
         // Sombra de las letras
-        g2.drawString(gp.player.keyNum + "", x + 50, y + 50 );
+        g2.drawString(gp.player.getKeyNum() + "", x + 50, y + 50 );
     }
     public void drawPlayerLife() {
         int x = gp.tileSize / 2;
         int y = gp.tileSize / 2;
         int i = 0;
         //Dibujar corazones en blanco
-        while(i < gp.player.maxLife / 2){
+        while(i < gp.player.getMaxLife() / 2){
             g2.drawImage(heartBlank, x, y, null);
             i++;
             // luego d dibujar un corazon, se desplaza x para que el otro corazon se dibuje
@@ -126,11 +156,11 @@ public class Ui {
         y = gp.tileSize / 2;
         i = 0;
         //Dibujar vida actual
-        while(i < gp.player.life){
+        while(i < gp.player.getLife()){
             g2.drawImage(heartHalf, x, y, null);
             i++;
             // para dibujar corazones enteros
-            if(i < gp.player.life){
+            if(i < gp.player.getLife()){
                 g2.drawImage(heartFull, x, y, null);
             }
             i++;
@@ -156,14 +186,14 @@ public class Ui {
         // Imagen
         x = gp.screenWidth / 2 - (gp.tileSize * 2) / 2;
         y += gp.tileSize * 2;
-        g2.drawImage(gp.skins.image.getSkins()[gp.skins.actualSkin],  x, y, gp.tileSize * 2, gp.tileSize * 2, null);
-        g2.drawImage(gp.skins.image.getShirts()[gp.skins.actualShirt],  x, y, gp.tileSize * 2, gp.tileSize * 2, null);
-        if(!gp.skins.gender){
-            g2.drawImage(gp.skins.image.getHairsMale()[gp.skins.actualHair],  x, y, gp.tileSize * 2, gp.tileSize * 2, null);
+        g2.drawImage(gp.skins.image.getSkins()[gp.skins.getActualSkin()],  x, y, gp.tileSize * 2, gp.tileSize * 2, null);
+        g2.drawImage(gp.skins.image.getShirts()[gp.skins.getActualShirt()],  x, y, gp.tileSize * 2, gp.tileSize * 2, null);
+        if(!gp.skins.isGender()){
+            g2.drawImage(gp.skins.image.getHairsMale()[gp.skins.getActualHair()],  x, y, gp.tileSize * 2, gp.tileSize * 2, null);
         } else{
-            g2.drawImage(gp.skins.image.getHairsFemale()[gp.skins.actualHair],  x, y, gp.tileSize * 2, gp.tileSize * 2, null);
+            g2.drawImage(gp.skins.image.getHairsFemale()[gp.skins.getActualHair()],  x, y, gp.tileSize * 2, gp.tileSize * 2, null);
         }
-        g2.drawImage(gp.skins.image.getEyes()[gp.skins.actualEye],  x, y, gp.tileSize * 2, gp.tileSize * 2, null);
+        g2.drawImage(gp.skins.image.getEyes()[gp.skins.getActualEye()],  x, y, gp.tileSize * 2, gp.tileSize * 2, null);
         // El menu
         g2.setFont(g2.getFont().deriveFont(Font.BOLD, 48F));
         text = "NUEVO JUEGO";
@@ -184,11 +214,21 @@ public class Ui {
             g2.drawString(">", x - gp.tileSize, y - 5);
         }
         g2.setFont(g2.getFont().deriveFont(Font.BOLD, 48F));
-        text = "SALIR";
+        text = "CAMBIAR PERFIL";
         x = getXforCenteredText(text);
         y += gp.tileSize * 2;
         g2.drawString(text, x, y);
         if(commandNumber == 2){
+            g2.setFont(g2.getFont().deriveFont(Font.BOLD, 96F));
+            g2.drawString(">", x - gp.tileSize, y - 5);
+        }
+
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 48F));
+        text = "SALIR";
+        x = getXforCenteredText(text);
+        y += gp.tileSize * 2;
+        g2.drawString(text, x, y);
+        if(commandNumber == 3){
             g2.setFont(g2.getFont().deriveFont(Font.BOLD, 96F));
             g2.drawString(">", x - gp.tileSize, y - 5);
         }
@@ -433,74 +473,127 @@ public class Ui {
                 g2.drawString(">", gp.tileSize * 13, gp.tileSize * 15);
             }
         }
-        g2.drawImage(gp.skins.image.getSkins()[gp.skins.actualSkin], gp.tileSize * 12, gp.tileSize * 4, gp.tileSize * 7, gp.tileSize * 7, null);
-        g2.drawImage(gp.skins.image.getShirts()[gp.skins.actualShirt], gp.tileSize * 12, gp.tileSize * 4, gp.tileSize * 7, gp.tileSize * 7, null);
-        if(!gp.skins.gender){
-            g2.drawImage(gp.skins.image.getHairsMale()[gp.skins.actualHair], gp.tileSize * 12, gp.tileSize * 4, gp.tileSize * 7, gp.tileSize * 7, null);
+        g2.drawImage(gp.skins.image.getSkins()[gp.skins.getActualSkin()], gp.tileSize * 12, gp.tileSize * 4, gp.tileSize * 7, gp.tileSize * 7, null);
+        g2.drawImage(gp.skins.image.getShirts()[gp.skins.getActualShirt()], gp.tileSize * 12, gp.tileSize * 4, gp.tileSize * 7, gp.tileSize * 7, null);
+        if(!gp.skins.isGender()){
+            g2.drawImage(gp.skins.image.getHairsMale()[gp.skins.getActualHair()], gp.tileSize * 12, gp.tileSize * 4, gp.tileSize * 7, gp.tileSize * 7, null);
         } else{
-            g2.drawImage(gp.skins.image.getHairsFemale()[gp.skins.actualHair], gp.tileSize * 12, gp.tileSize * 4, gp.tileSize * 7, gp.tileSize * 7, null);
+            g2.drawImage(gp.skins.image.getHairsFemale()[gp.skins.getActualHair()], gp.tileSize * 12, gp.tileSize * 4, gp.tileSize * 7, gp.tileSize * 7, null);
         }
-        g2.drawImage(gp.skins.image.getEyes()[gp.skins.actualEye], gp.tileSize * 12, gp.tileSize * 4, gp.tileSize * 7, gp.tileSize * 7, null);
+        g2.drawImage(gp.skins.image.getEyes()[gp.skins.getActualEye()], gp.tileSize * 12, gp.tileSize * 4, gp.tileSize * 7, gp.tileSize * 7, null);
         g2.drawImage(gp.skins.image.getFemale(), gp.tileSize * 13, gp.tileSize * 12, gp.tileSize * 2, gp.tileSize * 2, null);
         g2.drawImage(gp.skins.image.getMale(), gp.tileSize * 16, gp.tileSize * 12, gp.tileSize * 2, gp.tileSize * 2, null);
 
         gp.skins.skinsMenu(g2);
         if(commandNumber1 == 1){
-            gp.skins.selectDrawSkins(g2, gp.skins.skinI);
+            gp.skins.selectDrawSkins(g2, gp.skins.getSkinI());
         }
 
     }
     public void hairSelection(){
-        g2.setColor(new Color(255, 255, 255));
-        g2.fillRect(0, 0, gp.screenWidth, gp.screenHeight);
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 48F));
-        g2.setColor(Color.pink);
-        String text = "VOLVER";
-        g2.drawString(text, gp.tileSize * 14, gp.tileSize * 15);
+        drawAvatarCarousel("Cabello", gp.skins.getActualHair(), "hair");
+    }
 
-        if(commandNumber == 1){
-            g2.setFont(g2.getFont().deriveFont(Font.BOLD, 96F));
-            g2.drawString(">", gp.tileSize * 12, gp.tileSize * 15);
-        }
-        if(gp.skins.gender == false){
-            gp.skins.hairMenuMale(g2);
-        } else{
-            gp.skins.hairMenuFemale(g2);
-        }
-        if(commandNumber == 0){
-            gp.skins.selectDrawHair(g2, gp.skins.hairI);
-        }
-    }
     public void shirtSelection(){
-        g2.setColor(new Color(255, 255, 255));
-        g2.fillRect(0, 0, gp.screenWidth, gp.screenHeight);
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 48F));
-        String text = "VOLVER";
-        g2.setColor(Color.pink);
-        g2.drawString(text, gp.tileSize * 14, gp.tileSize * 15);
-        if(commandNumber == 0){
-            gp.skins.selectDrawShirt(g2, gp.skins.shirtI);
-        }
-        if(commandNumber == 1){
-            g2.setFont(g2.getFont().deriveFont(Font.BOLD, 96F));
-            g2.drawString(">", gp.tileSize * 12, gp.tileSize * 15);
-        }
-        gp.skins.shirtMenu(g2);
+        drawAvatarCarousel("Camisa", gp.skins.getActualShirt(), "shirt");
     }
+
     public void eyesSelection(){
+        drawAvatarCarousel("Ojos", gp.skins.getActualEye(), "eyes");
+    }
+
+    public void drawAvatarCarousel(String title, int currentIndex, String type) {
         g2.setColor(new Color(255, 255, 255));
         g2.fillRect(0, 0, gp.screenWidth, gp.screenHeight);
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 48F));
-        String text = "VOLVER";
+
+        int total = 0;
+
+        if(type.equals("hair")) {
+            if(!gp.skins.isGender()) {
+                total = gp.skins.image.getHairsMale().length;
+            } else {
+                total = gp.skins.image.getHairsFemale().length;
+            }
+        }
+
+        if(type.equals("shirt")) {
+            total = gp.skins.image.getShirts().length;
+        }
+
+        if(type.equals("eyes")) {
+            total = gp.skins.image.getEyes().length;
+        }
+
+        if(total <= 0) {
+            return;
+        }
+
+        if(currentIndex < 0) {
+            currentIndex = total - 1;
+        }
+
+        if(currentIndex >= total) {
+            currentIndex = 0;
+        }
+
+        int previousIndex = currentIndex - 1;
+        int nextIndex = currentIndex + 1;
+
+        if(previousIndex < 0) {
+            previousIndex = total - 1;
+        }
+
+        if(nextIndex >= total) {
+            nextIndex = 0;
+        }
+
+        int centerX = gp.screenWidth / 2;
+        int centerY = gp.screenHeight / 2;
+
+        int smallSize = gp.tileSize * 3;
+        int bigSize = gp.tileSize * 5;
+
+        // Solo título y flechas, sin instrucciones extra
         g2.setColor(Color.pink);
-        g2.drawString(text, gp.tileSize * 14, gp.tileSize * 15);
-        if(commandNumber == 0){
-            gp.skins.selectDrawEyes(g2, gp.skins.eyesI);
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 60F));
+        g2.drawString(title, centerX - gp.tileSize * 2, gp.tileSize * 2);
+
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 90F));
+        g2.drawString("<", centerX - gp.tileSize * 6, centerY + 20);
+        g2.drawString(">", centerX + gp.tileSize * 5, centerY + 20);
+
+        drawAvatarOption(type, previousIndex, centerX - gp.tileSize * 5, centerY - smallSize / 2, smallSize);
+        drawAvatarOption(type, currentIndex, centerX - bigSize / 2, centerY - bigSize / 2, bigSize);
+        drawAvatarOption(type, nextIndex, centerX + gp.tileSize * 2, centerY - smallSize / 2, smallSize);
+    }
+
+    public void drawAvatarOption(String type, int optionIndex, int x, int y, int size) {
+        int skinIndex = gp.skins.getActualSkin();
+        int shirtIndex = gp.skins.getActualShirt();
+        int eyeIndex = gp.skins.getActualEye();
+        int hairIndex = gp.skins.getActualHair();
+
+        if(type.equals("hair")) {
+            hairIndex = optionIndex;
         }
-        if(commandNumber == 1){
-            g2.setFont(g2.getFont().deriveFont(Font.BOLD, 96F));
-            g2.drawString(">", gp.tileSize * 12, gp.tileSize * 15);
+
+        if(type.equals("shirt")) {
+            shirtIndex = optionIndex;
         }
-        gp.skins.eyesMenu(g2);
+
+        if(type.equals("eyes")) {
+            eyeIndex = optionIndex;
+        }
+
+        g2.drawImage(gp.skins.image.getSkins()[skinIndex], x, y, size, size, null);
+        g2.drawImage(gp.skins.image.getShirts()[shirtIndex], x, y, size, size, null);
+
+        if(!gp.skins.isGender()) {
+            g2.drawImage(gp.skins.image.getHairsMale()[hairIndex], x, y, size, size, null);
+        } else {
+            g2.drawImage(gp.skins.image.getHairsFemale()[hairIndex], x, y, size, size, null);
+        }
+
+        g2.drawImage(gp.skins.image.getEyes()[eyeIndex], x, y, size, size, null);
     }
 }

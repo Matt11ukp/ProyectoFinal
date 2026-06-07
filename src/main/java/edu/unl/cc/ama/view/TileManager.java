@@ -1,7 +1,5 @@
 package edu.unl.cc.ama.view;
 
-import edu.unl.cc.ama.domain.Tile;
-
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -34,10 +32,9 @@ public class TileManager {
 
     // para no tener que crear muchas lineas de codigo por cada tile
     public void setup(int index, String imagePath, boolean collision){
-        UtilityTool uTool = new UtilityTool();
         try{
             BufferedImage original = ImageIO.read(getClass().getResourceAsStream("/tiles/" + imagePath + ".png"));
-            BufferedImage scaled = uTool.scaleImage(original, gp.tileSize, gp.tileSize);
+            BufferedImage scaled = UtilityTool.scaleImage(original, gp.tileSize, gp.tileSize);
             tile[index] = new Tile(scaled, collision);
         }catch(IOException e){
             e.printStackTrace();
@@ -84,42 +81,42 @@ public class TileManager {
             int worldY = worldRow * gp.tileSize;
 
             // 1. CÁLCULO DE CÁMARA (¿Dónde se dibuja en la pantalla?)
-            int screenX = worldX - gp.player.worldX + gp.player.screenX;
-            int screenY = worldY - gp.player.worldY + gp.player.screenY;
+            int screenX = worldX - gp.player.getWorldX() + gp.player.getScreenX();
+            int screenY = worldY - gp.player.getWorldY() + gp.player.getScreenY();
 
-            int rightOffSett = gp.screenWidth - gp.player.screenX;
-            int bottomOffSett = gp.screenHeight - gp.player.screenY;
+            int rightOffSett = gp.screenWidth - gp.player.getScreenX();
+            int bottomOffSett = gp.screenHeight - gp.player.getScreenY();
 
             // Congelar cámara en los bordes
-            if(gp.player.screenX > gp.player.worldX){ screenX = worldX; }
-            if(gp.player.screenY > gp.player.worldY){ screenY = worldY; }
-            if(rightOffSett > gp.maxWorldCol * gp.tileSize - gp.player.worldX){
+            if(gp.player.getScreenX() > gp.player.getWorldX()){ screenX = worldX; }
+            if(gp.player.getScreenY() > gp.player.getWorldY()){ screenY = worldY; }
+            if(rightOffSett > gp.maxWorldCol * gp.tileSize - gp.player.getWorldX()){
                 screenX = gp.screenWidth - (gp.maxWorldCol * gp.tileSize - worldX);
             }
-            if(bottomOffSett > gp.maxWorldRow * gp.tileSize - gp.player.worldY){
+            if(bottomOffSett > gp.maxWorldRow * gp.tileSize - gp.player.getWorldY()){
                 screenY = gp.screenHeight - (gp.maxWorldRow * gp.tileSize - worldY);
             }
 
             // 2. ALGORITMO DE VISIÓN REAL (Para evitar lag y bugs físicos)
-            int cameraLeftEdge = gp.player.worldX - gp.player.screenX;
-            int cameraTopEdge = gp.player.worldY - gp.player.screenY;
+            int cameraLeftEdge = gp.player.getWorldX() - gp.player.getScreenX();
+            int cameraTopEdge = gp.player.getWorldY() - gp.player.getScreenY();
             int cameraRightEdge = cameraLeftEdge + gp.screenWidth;
             int cameraBottomEdge = cameraTopEdge + gp.screenHeight;
 
             // Si la cámara chocó con un borde, reajustamos nuestra "visión" real
-            if(gp.player.screenX > gp.player.worldX) {
+            if(gp.player.getScreenX() > gp.player.getWorldX()) {
                 cameraLeftEdge = 0;
                 cameraRightEdge = gp.screenWidth;
             }
-            if(gp.player.screenY > gp.player.worldY) {
+            if(gp.player.getScreenY() > gp.player.getWorldY()) {
                 cameraTopEdge = 0;
                 cameraBottomEdge = gp.screenHeight;
             }
-            if(rightOffSett > gp.maxWorldCol * gp.tileSize - gp.player.worldX) {
+            if(rightOffSett > gp.maxWorldCol * gp.tileSize - gp.player.getWorldX()) {
                 cameraRightEdge = gp.maxWorldCol * gp.tileSize;
                 cameraLeftEdge = cameraRightEdge - gp.screenWidth;
             }
-            if(bottomOffSett > gp.maxWorldRow * gp.tileSize - gp.player.worldY) {
+            if(bottomOffSett > gp.maxWorldRow * gp.tileSize - gp.player.getWorldY()) {
                 cameraBottomEdge = gp.maxWorldRow * gp.tileSize;
                 cameraTopEdge = cameraBottomEdge - gp.screenHeight;
             }
