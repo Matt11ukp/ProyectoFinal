@@ -16,5 +16,7 @@ public enum SoundName {
     DEATH,
     SELECT,
     SLIDE,
-    DEATH_EFFECT;
+    DEATH_EFFECT,
+    VISUAL,
+    LOBBY
 }

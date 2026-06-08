@@ -30,13 +30,18 @@ public class TileManager {
         setup(5, "sand", false);
     }
 
-    // para no tener que crear muchas lineas de codigo por cada tile
     public void setup(int index, String imagePath, boolean collision){
-        try{
-            BufferedImage original = ImageIO.read(getClass().getResourceAsStream("/tiles/" + imagePath + ".png"));
+        try {
+            var stream = getClass().getResourceAsStream("/tiles/" + imagePath + ".png");
+            if (stream == null) {
+                throw new IOException("Archivo no encontrado: " + imagePath);
+            }
+            BufferedImage original = ImageIO.read(stream);
             BufferedImage scaled = UtilityTool.scaleImage(original, gp.tileSize, gp.tileSize);
             tile[index] = new Tile(scaled, collision);
-        }catch(IOException e){
+        } catch (IOException e) {
+            System.out.println("¡EXCEPCIÓN ATRAPADA!");
+            System.out.println("Error al cargar la imagen: " + imagePath);
             e.printStackTrace();
         }
     }

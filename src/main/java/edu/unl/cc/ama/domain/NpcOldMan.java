@@ -31,15 +31,12 @@ public class NpcOldMan extends Entity {
     }
 
     private void loadDialogues() {
-        setDialogue(0, "Hola, aventurero");
-        setDialogue(1, "¿Deseas encontrar el tesoro perdido de esta isla?");
-        setDialogue(2, "Puedes moverte con A, W, S, D o con las flechas");
-        setDialogue(3, "Con ESC puedes pausar el juego");
-        setDialogue(4, "Con Enter atacarás a enemigos y con Espacio podrás hacer un dash");
-        setDialogue(5, "Ten cuidado con los slimes — aunque te pueden dar objetos útiles");
-        setDialogue(6, "¡Buena suerte!");
+        setDialogue(0, "Hola Bienvenido a AMA (Presione enter para continuar)");
+        setDialogue(1, "Puedes moverte con A, W, S, D o con las flechas");
+        setDialogue(2, "Con ESC puedes pausar el juego");
+        setDialogue(3, "Para iniciar la prueba, porfavor acerquese al portal delante suyo");
+        setDialogue(4, "¡Buena suerte!");
     }
-
     @Override
     public void setAction() {
         actionLockCounter++;

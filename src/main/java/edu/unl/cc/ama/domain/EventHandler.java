@@ -10,7 +10,7 @@ public class EventHandler {
 
     private final GamePanel gp;
     private final EventRect[][] eventRect;
-
+    private boolean isPortalEvent = false;
     private int previousEventX;
     private int previousEventY;
     private boolean canTouchEvent = true;
@@ -29,8 +29,13 @@ public class EventHandler {
     }
 
     public void checkEvent() {
-        resetCooldownIfFarEnough();
-        if (canTouchEvent) {
+
+        if (gp.gameState == GameState.DIALOGUE || gp.gameState == GameState.VISUAL) return;
+
+        if (hit(gp.player, 15, 4, "any")) {
+            gp.gameState = GameState.DIALOGUE;
+            gp.ui.currentDialogue = "La prueba visual te espera.\n¿Deseas entrar?";
+            isPortalEvent = true;
         }
     }
 
@@ -68,5 +73,13 @@ public class EventHandler {
         eRect.y = eRect.getEventRectDefaultY();
 
         return hit;
+    }
+
+    public boolean isPortalEvent() {
+        return isPortalEvent;
+    }
+
+    public void setPortalEvent(boolean portalEvent) {
+        isPortalEvent = portalEvent;
     }
 }

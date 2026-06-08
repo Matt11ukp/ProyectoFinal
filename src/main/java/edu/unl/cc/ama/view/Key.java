@@ -105,8 +105,16 @@ if(gp.gameState == GameState.REGISTER){
 
  if (gp.ui.commandNumber == 0) {
      gp.player.getPlayerImage();
-     gp.gameState = GameState.PLAY;
+     if (gp.getCurrentUser() != null) {
+         gp.npc[0].getDialogues()[0] = "Hola " + gp.getCurrentUser().getName() + ", bienvenido a AMA (Presione Enter para continuar)";
+     }
+     gp.gameState = GameState.DIALOGUE;
 
+     gp.npc[0].setDialogueIndex(0);
+     gp.ui.currentDialogue = gp.npc[0].getDialogues()[gp.npc[0].getDialogueIndex()];
+     gp.stopMusic();
+     gp.playMusic(SoundName.LOBBY);
+     return;
 }
 
                 if (gp.ui.commandNumber == 1) {
@@ -501,7 +509,37 @@ else if (gp.gameState == GameState.VISUAL) {
    
         if (gp.gameState == GameState.DIALOGUE) {
             if (code == KeyEvent.VK_ENTER) {
-                gp.gameState = GameState.PLAY;
+
+                if (gp.eHandler.isPortalEvent()) {
+                    gp.launchVisualTest();
+                    gp.gameState = GameState.VISUAL;
+                    gp.eHandler.setPortalEvent(false);
+                } else {
+                    gp.npc[0].setDialogueIndex(gp.npc[0].getDialogueIndex() + 1);
+
+                    if (gp.npc[0].getDialogues()[gp.npc[0].getDialogueIndex()] != null) {
+                        // Si hay texto, lo actualizamos en la pantalla
+                        gp.ui.currentDialogue = gp.npc[0].getDialogues()[gp.npc[0].getDialogueIndex()];
+                        gp.playSE(SoundName.SELECT);
+                    } else {
+
+                        gp.npc[0].setDialogueIndex(0);
+                        gp.gameState = GameState.PLAY;
+                        gp.playSE(SoundName.SELECT);
+                    }
+
+                }
+
+            }
+            if (code == KeyEvent.VK_ESCAPE) {
+                if (gp.eHandler.isPortalEvent()) {
+                    gp.eHandler.setPortalEvent(false);
+                    gp.gameState = GameState.PLAY;
+                    gp.player.setWorldY(gp.player.getWorldY() + gp.tileSize);
+                } else {
+
+                    gp.gameState = GameState.PLAY;
+                }
             }
         }
     }

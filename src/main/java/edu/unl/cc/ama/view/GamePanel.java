@@ -45,14 +45,9 @@ public class GamePanel extends JPanel implements IGameLoop {
     private final Sound music      = new Sound();
     private final Sound soundEfect = new Sound();
 
-    // ── MINIJUEGO ACTIVO ──────────────────────────────────────────────────────
-    // Punto de extensión para nuevas pruebas (Objetivo 1).
-    // launchTest(new PruebaMatematicas(), GameState.MATH) y el motor
-    // llama activeTest.startTest() / update() / endTest() automáticamente.
     private Visual      visualTest;
     private GameState   previousGameState = GameState.TITLE;
 
-    // ── SISTEMA DE USUARIOS ───────────────────────────────────────────────────
     private User                      currentUser;
     private int                       loadingProgress = 0;
     private boolean                   usersLoaded     = false;
@@ -119,7 +114,7 @@ public class GamePanel extends JPanel implements IGameLoop {
         visualTest.startTest();             // llama Test.startTest() → onStart()
         gameState = GameState.VISUAL;
         stopMusic();
-        playMusic(SoundName.GAME);
+        playMusic(SoundName.VISUAL);
     }
 
     public void returnFromVisualTest() {
@@ -129,7 +124,7 @@ public class GamePanel extends JPanel implements IGameLoop {
             previousGameState == GameState.USER_SELECTION) {
             playMusic(SoundName.MENU);
         } else {
-            playMusic(SoundName.GAME);
+            playMusic(SoundName.LOBBY);
         }
         ui.commandNumber = 0;
     }
@@ -163,6 +158,11 @@ public class GamePanel extends JPanel implements IGameLoop {
         if (visualTest.isTestCompleted() && visualTest.shouldReturnToGame(2000)) {
             returnFromVisualTest();
         }
+        if (visualTest.shouldReturnToGame(2000)) {
+            gameState = GameState.PLAY;
+            player.setWorldY(5 * tileSize);
+            eHandler.setPortalEvent(false);
+        }
     }
 
     private void updatePlay() {
@@ -182,13 +182,12 @@ public class GamePanel extends JPanel implements IGameLoop {
 
     private void updateMonsters() {
         for (Entity entity : monster) {
-            if (entity == null) continue;
+            if (entity != null){
+                entity.update();
+            }
         }
     }
 
-    // =========================================================================
-    // RETRY
-    // =========================================================================
     public void retry() {
         player.setDefaultValues();
         player.getPlayerImage();

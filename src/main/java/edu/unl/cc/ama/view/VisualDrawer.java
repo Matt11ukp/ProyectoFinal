@@ -74,12 +74,12 @@ public class VisualDrawer {
 
         g2.setFont(g2.getFont().deriveFont(Font.BOLD, 30F));
         drawCenteredPixelText(g2, "TEST VISUAL", gp, panelY + gp.tileSize * 4);
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 24F));
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 30F));
         drawCenteredPixelText(g2, "ENCUENTRA LAS GEMAS", gp, panelY + gp.tileSize * 5 + 10);
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 22F));
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 30F));
         drawCenteredPixelText(g2, "ESCONDIDAS ENTRE LOS HONGOS", gp, panelY + gp.tileSize * 6 + 10);
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 18F));
-        drawCenteredPixelText(g2, "ENTER = linterna  |  ESC = salir", gp, panelY + gp.tileSize * 7 + 5);
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 30F));
+        drawCenteredPixelText(g2, "ENTER = Antorcha  |  ESC = salir", gp, panelY + gp.tileSize * 7 + 5);
     }
 
     private void drawMenuStyleBox(Graphics2D g2, int x, int y, int w, int h) {
@@ -181,7 +181,7 @@ public class VisualDrawer {
 
     private void drawMessage(Graphics2D g2, GamePanel gp, Visual visual) {
         if (!visual.isTestCompleted()) return;
-        String msg = "Encontraste todas las gemas";
+        String msg = "!!Encontraste todas las gemas!!";
         g2.setFont(g2.getFont().deriveFont(Font.BOLD, 34F));
         int x = (gp.screenWidth - g2.getFontMetrics().stringWidth(msg)) / 2;
         int y = gp.screenHeight / 2;

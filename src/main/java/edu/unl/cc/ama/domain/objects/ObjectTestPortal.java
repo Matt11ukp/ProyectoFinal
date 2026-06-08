@@ -4,6 +4,6 @@ public class ObjectTestPortal extends Item {
 
     public ObjectTestPortal() {
         setType(Type.TEST_PORTAL);
-        setCollision(true);
+        setCollision(false);
     }
 }

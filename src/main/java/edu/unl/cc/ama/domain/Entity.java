@@ -136,6 +136,18 @@ public abstract class Entity {
     public BufferedImage getRight1() { return right1; }
     public BufferedImage getRight2() { return right2; }
 
+    public int getDialogueIndex() {
+        return dialogueIndex;
+    }
+
+    public void setDialogueIndex(int dialogueIndex) {
+        this.dialogueIndex = dialogueIndex;
+    }
+
+    public String[] getDialogues() {
+        return dialogues;
+    }
+
     protected void setDialogue(int index, String text) {
         if (index >= 0 && index < dialogues.length) dialogues[index] = text;
     }

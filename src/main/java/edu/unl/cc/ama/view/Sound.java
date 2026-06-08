@@ -26,6 +26,8 @@ public class Sound {
         soundURL[13] = getClass().getResource("/sound/seleccionar.wav");
         soundURL[14] = getClass().getResource("/sound/deslizar.wav");
         soundURL[15] = getClass().getResource("/sound/muerteefectodesonido.wav");
+        soundURL[16] = getClass().getResource("/sound/visual.wav");
+        soundURL[17] = getClass().getResource("/sound/lobby.wav");
     }
     public void setFile(SoundName name){
         try {

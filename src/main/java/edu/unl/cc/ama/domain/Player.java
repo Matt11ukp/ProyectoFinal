@@ -45,7 +45,7 @@ public class Player extends Entity {
         setWorldX(gp.tileSize * 15);
         setWorldY(gp.tileSize * 8);
         setSpeed(4);
-        setDirection("down");
+        setDirection("up");
         setType(EntityType.PLAYER);
     }
 
@@ -233,11 +233,6 @@ public class Player extends Entity {
     public void pickUpObject(int i) {
         if (i == 999) return;
         Type type = gp.obj[i].getType();
-        switch (type) {
-            case TEST_PORTAL -> {
-                gp.launchVisualTest();
-            }
-        }
     }
 
     public boolean isMoving() {
