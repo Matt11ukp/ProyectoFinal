@@ -87,7 +87,7 @@ public class ImageGetter {
     }
 
     public void getSkin() {
-        imageSingle(9,  "objects",        objects);
+        imageSingle(10,  "objects",        objects);
         imageSingle(12, "skin/Block",     skinBlocks);
         imageSingle(15, "skin/HairFemale", hairsFemale);
 

@@ -104,9 +104,9 @@ if(gp.gameState == GameState.REGISTER){
     gp.playSE(SoundName.SELECT);
 
  if (gp.ui.commandNumber == 0) {
-    // Objetivo 4: lanzar minijuego — memoriza estado anterior, inicia test
+     gp.player.getPlayerImage();
      gp.gameState = GameState.PLAY;
-    //gp.launchVisualTest();
+
 }
 
                 if (gp.ui.commandNumber == 1) {
@@ -126,50 +126,7 @@ if (gp.ui.commandNumber == 3) {
 }
             }
         }
-
-       
-        // GANAR / PERDER
-      
-        else if (gp.gameState == GameState.WIN || gp.gameState == GameState.LOST) {
-
-            if (code == KeyEvent.VK_W || code == KeyEvent.VK_UP) {
-                gp.playSE(SoundName.SLIDE);
-                gp.ui.commandNumber--;
-
-                if (gp.ui.commandNumber < 0) {
-                    gp.ui.commandNumber = 2;
-                }
-            }
-
-            if (code == KeyEvent.VK_S || code == KeyEvent.VK_DOWN) {
-                gp.playSE(SoundName.SLIDE);
-                gp.ui.commandNumber++;
-
-                if (gp.ui.commandNumber > 2) {
-                    gp.ui.commandNumber = 0;
-                }
-            }
-
-            if (code == KeyEvent.VK_ENTER) {
-                gp.playSE(SoundName.SELECT);
-
-                if (gp.ui.commandNumber == 0) {
-                    gp.retry();
-                    gp.playMusic(SoundName.GAME);
-                }
-
-                if (gp.ui.commandNumber == 1) {
-                    gp.gameState = GameState.TITLE;
-                    gp.stopMusic();
-                    gp.playMusic(SoundName.MENU);
-                }
-
-                if (gp.ui.commandNumber == 2) {
-                    System.exit(0);
-                }
-            }
-        }
-
+        
         // PAUSA
         
         else if (gp.gameState == GameState.PAUSE) {

@@ -13,8 +13,6 @@ public class GreenSlime extends Entity {
 
         setName("Green Slime");
         setSpeed(1);
-        setMaxLife(4);
-        setLife(getMaxLife());
         setDirection("down");
         setType(EntityType.MONSTER);
 
@@ -52,9 +50,4 @@ public class GreenSlime extends Entity {
         }
     }
 
-    @Override
-    public void damageReaction() {
-        actionLockCounter = 0;
-        setDirection(gp.player.getDirection());
-    }
 }

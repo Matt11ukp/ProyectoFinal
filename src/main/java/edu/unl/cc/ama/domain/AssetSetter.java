@@ -100,7 +100,6 @@ public class AssetSetter {
             }
             case "SLIME_BOOTS" -> {
                 GreenSlime s = new GreenSlime(gp);
-                s.setDropsBoots(true);
                 yield s;
             }
             default -> null;

@@ -97,13 +97,11 @@ public class TileManager {
                 screenY = gp.screenHeight - (gp.maxWorldRow * gp.tileSize - worldY);
             }
 
-            // 2. ALGORITMO DE VISIÓN REAL (Para evitar lag y bugs físicos)
             int cameraLeftEdge = gp.player.getWorldX() - gp.player.getScreenX();
             int cameraTopEdge = gp.player.getWorldY() - gp.player.getScreenY();
             int cameraRightEdge = cameraLeftEdge + gp.screenWidth;
             int cameraBottomEdge = cameraTopEdge + gp.screenHeight;
 
-            // Si la cámara chocó con un borde, reajustamos nuestra "visión" real
             if(gp.player.getScreenX() > gp.player.getWorldX()) {
                 cameraLeftEdge = 0;
                 cameraRightEdge = gp.screenWidth;
@@ -121,7 +119,6 @@ public class TileManager {
                 cameraTopEdge = cameraBottomEdge - gp.screenHeight;
             }
 
-            // 3. DIBUJADO OPTIMIZADO (Solo dibuja lo que la cámara está viendo)
             if(worldX + gp.tileSize > cameraLeftEdge &&
                     worldX - gp.tileSize < cameraRightEdge &&
                     worldY + gp.tileSize > cameraTopEdge &&
@@ -130,9 +127,8 @@ public class TileManager {
                 g2.drawImage(tile[TileNum].getImage(), screenX, screenY, gp.tileSize, gp.tileSize, null);
             }
 
-            worldCol++; // continua al siguiente tile
+            worldCol++;
 
-            // si se llega al borde de la coordenada x, se reinicia x y se va un tile hacia abajo (row)
             if(worldCol == gp.maxWorldCol){
                 worldCol = 0;
                 worldRow++;

@@ -24,7 +24,6 @@ public class Ui {
     private UserSelectionDrawer userSelectionDrawer;
     private VisualDrawer visualDrawer;
 
-    BufferedImage heartFull, heartHalf, heartBlank, keyImage;
     public boolean messageOn = false;
     public String message = "";
     int messageCounter = 0;
@@ -47,13 +46,7 @@ public class Ui {
         } catch(IOException e){
             e.printStackTrace();
         }
-        // HUD object
-        Item heart = new ObjectHeart();
-        heartFull = ImageGetter.getObjects()[4];
-        heartHalf = gp.skins.image.getObjects()[5];
-        heartBlank = gp.skins.image.getObjects()[6];
-        Item key = new ObjectKey();
-        keyImage = ImageGetter.getObjects()[7];
+
     }
     public void showMessage(String text){
         message = text;
@@ -69,7 +62,6 @@ public class Ui {
             return;
         }
         if(gp.gameState == GameState.VISUAL){
-            // Objetivo 4: VisualDrawer recibe (g2, gp, visual) — firma correcta
             visualDrawer.draw(g2, gp, gp.getVisualTest());
             return;
         }
@@ -85,39 +77,11 @@ public class Ui {
             drawTitleScreen();
         }
 
-        if(gp.gameState == GameState.PLAY){
-            drawPlayerLife();
-            if(gp.player.getKeyNum() > 0){
-                drawKeys();
-            }
-        }
         if(gp.gameState == GameState.PAUSE){
-            drawPlayerLife();
             drawPauseScreen();
-            if(gp.player.getKeyNum() > 0){
-                drawKeys();
-            }
         }
         if(gp.gameState == GameState.DIALOGUE){
-            drawPlayerLife();
             drawDialogueScreen();
-            if(gp.player.getKeyNum() > 0){
-                drawKeys();
-            }
-        }
-        if(gp.gameState == GameState.WIN_SHOW){
-            gp.stopMusic();
-            winShowing();
-        }
-        if(gp.gameState == GameState.WIN){
-            gp.stopMusic();
-            winScreen();
-        }
-        if(gp.gameState == GameState.LOST_SHOW){
-            lostShowing();
-        }
-        if(gp.gameState == GameState.LOST){
-            lostScreen();
         }
         if(gp.gameState == GameState.SKIN_SELECTION){
             skinCustomization();
@@ -132,42 +96,7 @@ public class Ui {
             eyesSelection();
         }
     }
-    public void drawKeys(){
-        int x = gp.tileSize * 2;
-        int y = gp.tileSize * 13;
-        g2.drawImage(keyImage, x, y, null);
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 64F));
-        // Sombra de las letras
-        g2.drawString(gp.player.getKeyNum() + "", x + 50, y + 50 );
-    }
-    public void drawPlayerLife() {
-        int x = gp.tileSize / 2;
-        int y = gp.tileSize / 2;
-        int i = 0;
-        //Dibujar corazones en blanco
-        while(i < gp.player.getMaxLife() / 2){
-            g2.drawImage(heartBlank, x, y, null);
-            i++;
-            // luego d dibujar un corazon, se desplaza x para que el otro corazon se dibuje
-            x += gp.tileSize;
-        }
-        // resetiar
-        x = gp.tileSize / 2;
-        y = gp.tileSize / 2;
-        i = 0;
-        //Dibujar vida actual
-        while(i < gp.player.getLife()){
-            g2.drawImage(heartHalf, x, y, null);
-            i++;
-            // para dibujar corazones enteros
-            if(i < gp.player.getLife()){
-                g2.drawImage(heartFull, x, y, null);
-            }
-            i++;
-            // luego d dibujar un corazon, se desplaza x para que el otro corazon se dibuje
-            x += gp.tileSize;
-        }
-    }
+
     public void drawTitleScreen(){
         // Cambiar el color del fondo
         g2.setColor(new Color(255, 255, 255));
@@ -353,74 +282,7 @@ public class Ui {
             g2.setFont(g2.getFont().deriveFont(Font.BOLD, 96F));
             g2.drawString(">", x - gp.tileSize, y - 5);
         }
-    }
-    public void winShowing(){
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 100F));
-        String text = "!!HAS ABIERTO EL TESORO!!";
-        int x = getXforCenteredText(text);
-        int y = gp.tileSize * 3;
-        // Sombra de las letras
-        g2.setColor(Color.black);
-        g2.drawString(text, x + 5, y + 5);
-        // las letras del titulo
-        g2.setColor(Color.white);
-        g2.drawString(text, x, y);
-    }
-    public void lostShowing(){
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 100F));
-        String text = "!!TE HAN MATADO!!";
-        int x = getXforCenteredText(text);
-        int y = gp.tileSize * 3;
-        // Sombra de las letras
-        g2.setColor(Color.black);
-        g2.drawString(text, x + 5, y + 5);
-        // las letras del titulo
-        g2.setColor(Color.white);
-        g2.drawString(text, x, y);
-    }
-    public void lostScreen(){
-        // Cambiar el color del fondo
-        g2.setColor(new Color(0, 0, 0));
-        g2.fillRect(0, 0, gp.screenWidth, gp.screenHeight);
-        //nombre del titulo
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 128F));
-        String text = "!!HAS PERDIDO!!";
-        int x = getXforCenteredText(text);
-        int y = gp.tileSize * 3;
-        // Sombra de las letras
-        g2.setColor(Color.black);
-        g2.drawString(text, x + 5, y + 5);
-        // las letras del titulo
-        g2.setColor(Color.white);
-        g2.drawString(text, x, y);
-        // El menu
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 48F));
-        text = "INTENTAR OTRA VEZ";
-        x = getXforCenteredText(text);
-        y += gp.tileSize * 4;
-        g2.drawString(text, x, y);
-        if(commandNumber == 0){
-            g2.setFont(g2.getFont().deriveFont(Font.BOLD, 96F));
-            g2.drawString(">", x - gp.tileSize, y - 5);
-        }
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 48F));
-        text = "MENU PRINCIPAL";
-        x = getXforCenteredText(text);
-        y += gp.tileSize * 2;
-        g2.drawString(text, x, y);
-        if(commandNumber == 1){
-            g2.setFont(g2.getFont().deriveFont(Font.BOLD, 96F));
-            g2.drawString(">", x - gp.tileSize, y - 5);
-        }
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 48F));
-        text = "SALIR";
-        x = getXforCenteredText(text);
-        y += gp.tileSize * 2;
-        g2.drawString(text, x, y);
-        if(commandNumber == 2){
-            g2.setFont(g2.getFont().deriveFont(Font.BOLD, 96F));
-            g2.drawString(">", x - gp.tileSize, y - 5);
-        }
+
     }
     public void skinCustomization(){
         // Cambiar el color del fondo

@@ -9,31 +9,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Comparator;
 
-/**
- * Orquestador principal del motor 2D y mediador de todos los sistemas.
- *
- * OBJETIVO 4 — Flujo modular de navegación:
- *   • launchVisualTest(): lanza el minijuego desde cualquier estado
- *     (TITLE o PLAY). Memoriza previousGameState para volver.
- *   • returnFromVisualTest(): devuelve al estado exacto de origen.
- *   • updateVisual(): tick del minijuego; detecta fin y regresa solo.
- *
- * OBJETIVO 1 — Escalabilidad para futuras pruebas:
- *   El campo "private Test activeTest" es el punto de extensión.
- *   Para añadir PruebaMatematicas:
- *     1. PruebaMatematicas extends Test  (en domain/)
- *     2. Llamar launchTest(new PruebaMatematicas(), GameState.MATH)
- *     3. El resto del motor (loop, render, resultado) no cambia.
- *
- * CORRECCIONES RESPECTO AL ORIGINAL:
- *   • updateLoading() ya no contiene el bloque VISUAL huérfano.
- *   • paintComponent() ya no duplica el draw del minijuego.
- *   • isMenuState() incluye VISUAL → evita dibujar el mundo debajo.
- *   • Mouse movido de domain a view (violación MVC corregida).
- */
 public class GamePanel extends JPanel implements IGameLoop {
-
-    // ── CONFIGURACIÓN ─────────────────────────────────────────────────────────
     public final int originalTileSize = 16;
     public final int scale            = 3;
     public final int tileSize         = originalTileSize * scale;
@@ -41,8 +17,8 @@ public class GamePanel extends JPanel implements IGameLoop {
     public final int maxScreenRow     = 16;
     public final int screenWidth      = tileSize * maxScreenCol;
     public final int screenHeight     = tileSize * maxScreenRow;
-    public final int maxWorldCol      = 50;
-    public final int maxWorldRow      = 50;
+    public final int maxWorldCol      = 30;
+    public final int maxWorldRow      = 16;
     public final int worldWidth       = tileSize * maxWorldCol;
     public final int worldHeight      = tileSize * maxWorldRow;
 
@@ -56,13 +32,13 @@ public class GamePanel extends JPanel implements IGameLoop {
     public  final EventHandler   eHandler = new EventHandler(this);   // 7
     public  final Player         player   = new Player(this, keyH);   // 8
     public  final EntityRenderer renderer = new EntityRenderer(this); // 9
+    public Lighting lighting = new Lighting();
 
     // ── ENTIDADES ─────────────────────────────────────────────────────────────
     public Item[]   obj     = new Item[50];
     public Entity[] npc     = new Entity[10];
     public Entity[] monster = new Entity[10];
 
-    public  final LootSystem lootSystem = new LootSystem(this);       // 10
     private final GameLoop   loop       = new GameLoop(this);         // 11
 
     // ── AUDIO ─────────────────────────────────────────────────────────────────
@@ -121,11 +97,9 @@ public class GamePanel extends JPanel implements IGameLoop {
     // =========================================================================
     public void setUpGame() {
         player.getPlayerImage();
-        player.getPlayerAttackImage();
         sett.setObject();
         sett.setNPC();
         sett.setMonster();
-        registerLootSystem();
 
         userProgressManager = new UserProgressManager(
                 userRepository,
@@ -137,25 +111,9 @@ public class GamePanel extends JPanel implements IGameLoop {
         playMusic(SoundName.MENU);
     }
 
-    private void registerLootSystem() {
-        for (Entity m : monster) {
-            if (m != null) m.setDeathListener(lootSystem);
-        }
-    }
 
     public void startGameThread() { loop.start(); }
 
-    // =========================================================================
-    // LANZAMIENTO Y RETORNO DE MINIJUEGOS — Objetivo 4
-    // =========================================================================
-
-    /**
-     * Lanza el minijuego de linterna desde cualquier estado del motor.
-     * Funciona tanto desde el menú TITLE como desde el Mundo Hub (PLAY).
-     *
-     * Uso desde Key.java (menú):  gp.launchVisualTest()
-     * Uso desde Player (mundo):   gp.launchVisualTest()  via TEST_PORTAL
-     */
     public void launchVisualTest() {
         previousGameState = gameState;      // memoriza dónde estaba el jugador
         visualTest.startTest();             // llama Test.startTest() → onStart()
@@ -164,42 +122,31 @@ public class GamePanel extends JPanel implements IGameLoop {
         playMusic(SoundName.GAME);
     }
 
-    /**
-     * Devuelve al estado exacto desde donde se lanzó el minijuego.
-     * También puede usarse con ESC para salida anticipada.
-     */
     public void returnFromVisualTest() {
         gameState = previousGameState;
         stopMusic();
-        // Restaurar música según estado de retorno
         if (previousGameState == GameState.TITLE ||
             previousGameState == GameState.USER_SELECTION) {
             playMusic(SoundName.MENU);
         } else {
-            playMusic(SoundName.GAME); // PLAY u otros estados de mundo
+            playMusic(SoundName.GAME);
         }
         ui.commandNumber = 0;
     }
 
-    // =========================================================================
-    // UPDATE
-    // =========================================================================
     @Override
     public void update() {
         switch (gameState) {
             case LOADING        -> updateLoading();
-            case USER_SELECTION -> { /* navegación manejada en Key.java */ }
-            case REGISTER       -> { /* input manejado en Key.java */      }
-            case VISUAL         -> updateVisual();    // ← CORREGIDO: propio case
+            case USER_SELECTION -> { }
+            case REGISTER       -> { }
+            case VISUAL         -> updateVisual();
             case PLAY           -> updatePlay();
-            case WIN_SHOW       -> updateWinShow();
-            case LOST_SHOW      -> updateLostShow();
-            default             -> { /* TITLE, PAUSE, WIN, LOST, skins */ }
+            default             -> { }
         }
     }
 
     private void updateLoading() {
-        // CORRECCIÓN: ya no contiene lógica de VISUAL (estado distinto)
         if (!usersLoaded) {
             userSelectionMenu.setUsers(userRepository.loadUsers());
             usersLoaded = true;
@@ -210,13 +157,9 @@ public class GamePanel extends JPanel implements IGameLoop {
         }
     }
 
-    /**
-     * Tick del minijuego de linterna.
-     * Visual.update() detecta el fin y llama ConsoleLogger internamente.
-     */
     private void updateVisual() {
         visualTest.update();
-        // Retorno automático 2 segundos después de completar el test
+
         if (visualTest.isTestCompleted() && visualTest.shouldReturnToGame(2000)) {
             returnFromVisualTest();
         }
@@ -237,21 +180,9 @@ public class GamePanel extends JPanel implements IGameLoop {
         }
     }
 
-    private void updateLostShow() {
-        player.incrementLostCounter();
-        if (player.getLostCounter() > 200) {
-            player.setInvincible(false);
-            gameState = GameState.LOST;
-            playMusic(SoundName.DEATH);
-            player.setLostCounter(0);
-        }
-    }
-
     private void updateMonsters() {
-        for (int i = 0; i < monster.length; i++) {
-            if (monster[i] == null) continue;
-            if (monster[i].isAlive() && !monster[i].isDying()) monster[i].update();
-            if (!monster[i].isAlive()) monster[i] = null;
+        for (Entity entity : monster) {
+            if (entity == null) continue;
         }
     }
 
@@ -264,14 +195,10 @@ public class GamePanel extends JPanel implements IGameLoop {
         sett.setObject();
         sett.setNPC();
         sett.setMonster();
-        registerLootSystem();
         applyCurrentUserProgress();
         gameState = GameState.PLAY;
     }
 
-    // =========================================================================
-    // RENDERIZADO — Algoritmo del Pintor
-    // =========================================================================
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -279,7 +206,7 @@ public class GamePanel extends JPanel implements IGameLoop {
         long drawStart = 0;
         if (keyH.checkDrawTime) drawStart = System.nanoTime();
 
-        renderFrame(g2); // gestiona TODOS los estados, incluyendo VISUAL
+        renderFrame(g2);
 
         if (keyH.checkDrawTime) {
             long passed = System.nanoTime() - drawStart;
@@ -287,18 +214,16 @@ public class GamePanel extends JPanel implements IGameLoop {
             g2.setFont(g2.getFont().deriveFont(Font.PLAIN, 12f));
             g2.drawString("Draw: " + passed + "ns", 10, 400);
         }
-        // CORREGIDO: eliminado el "else if (VISUAL)" duplicado que estaba aquí
         g2.dispose();
     }
 
     private void renderFrame(Graphics2D g2) {
-        // CORRECCIÓN: VISUAL añadido a isMenuState() → Ui.draw() lo maneja
-        // correctamente con VisualDrawer sin dibujar el mundo debajo
+
         if (isMenuState()) {
             ui.draw(g2);
             return;
         }
-        // Estado PLAY, PAUSE, WIN, LOST, etc. → dibujar mundo
+
         tileM.draw(g2);
         collectEntities();
         entityList.sort(Comparator.comparingInt(Entity::getWorldY));
@@ -307,6 +232,7 @@ public class GamePanel extends JPanel implements IGameLoop {
             else                        renderer.draw(e, g2);
         }
         entityList.clear();
+        lighting.drawPlayerLighting(g2, this);
         ui.draw(g2);
         collectItems();
         itemList.sort(Comparator.comparingInt(Item::getWorldY));
@@ -314,10 +240,6 @@ public class GamePanel extends JPanel implements IGameLoop {
         itemList.clear();
     }
 
-    /**
-     * CORREGIDO: VISUAL incluido → el motor no dibuja el mundo debajo del minijuego.
-     * Ui.draw() enruta correctamente a VisualDrawer cuando gameState == VISUAL.
-     */
     private boolean isMenuState() {
         return switch (gameState) {
             case TITLE, SKIN_SELECTION, SKIN_HAIR_SELECTION,
@@ -344,9 +266,6 @@ public class GamePanel extends JPanel implements IGameLoop {
         if (img != null) g2.drawImage(img, sx, sy, null);
     }
 
-    // =========================================================================
-    // PROYECCIÓN MUNDO → PANTALLA
-    // =========================================================================
     public int computeScreenX(int worldX) {
         int x = worldX - player.getWorldX() + player.getScreenX();
         if (player.getScreenX() > player.getWorldX()) x = worldX;
@@ -363,9 +282,6 @@ public class GamePanel extends JPanel implements IGameLoop {
         return y;
     }
 
-    // =========================================================================
-    // GETTERS DE SISTEMAS (para Key.java y otros colaboradores)
-    // =========================================================================
     public Visual                    getVisualTest()                   { return visualTest; }
     public User                      getCurrentUser()                  { return currentUser; }
     public void                      setCurrentUser(User user)         { this.currentUser = user; }
@@ -389,9 +305,6 @@ public class GamePanel extends JPanel implements IGameLoop {
         currentUser = null;
     }
 
-    // =========================================================================
-    // AUDIO
-    // =========================================================================
     public void playMusic(SoundName name) { music.setFile(name); music.play(); music.loop(); }
     public void stopMusic()               { music.stop(); }
     public void playSE(SoundName name)    { soundEfect.setFile(name); soundEfect.play(); }

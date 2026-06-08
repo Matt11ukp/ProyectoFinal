@@ -13,16 +13,9 @@ public class Player extends Entity {
 
     private final Key keyH;
 
-    private boolean hasBoots = false;
-    private int keyNum = 0;
-    private int coinNum = 0;
-
     private boolean dash = false;
     private int dashCounter = 0;
     private int cooldown = 200;
-
-    private int portalCooldown = 120;
-    private int portalMonsterCooldown = 120;
 
     private int winCounter  = 0;
     private int lostCounter = 0;
@@ -48,16 +41,11 @@ public class Player extends Entity {
     }
 
     public void setDefaultValues() {
-        hasBoots = false;
         dash     = false;
-        keyNum   = 0;
-        coinNum = 0;
-        setWorldX(gp.tileSize * 23);
-        setWorldY(gp.tileSize * 25);
+        setWorldX(gp.tileSize * 15);
+        setWorldY(gp.tileSize * 8);
         setSpeed(4);
         setDirection("down");
-        setMaxLife(6);
-        setLife(getMaxLife());
         setType(EntityType.PLAYER);
     }
 
@@ -118,33 +106,15 @@ public class Player extends Entity {
                 gp.skins.image.getMaleUp2(), null);
     }
 
-    public void getPlayerAttackImage() {
-        attackUp1    = setup("/player/upAttack1",    gp.tileSize,     gp.tileSize * 2);
-        attackUp2    = setup("/player/upAttack2",    gp.tileSize,     gp.tileSize * 2);
-        attackDown1  = setup("/player/attack1",      gp.tileSize,     gp.tileSize * 2);
-        attackDown2  = setup("/player/attack2",      gp.tileSize,     gp.tileSize * 2);
-        attackRight1 = setup("/player/rightAttack1", gp.tileSize * 2, gp.tileSize);
-        attackRight2 = setup("/player/rightAttack2", gp.tileSize * 2, gp.tileSize);
-        attackLeft1  = setup("/player/leftAttack1",  gp.tileSize * 2, gp.tileSize);
-        attackLeft2  = setup("/player/leftAttack2",  gp.tileSize * 2, gp.tileSize);
-    }
-
     @Override
     public void update() {
         updateSpeed();
         updateDash();
-        updatePortalCooldowns();
-        updateInvincibility();
-
-        if (isAttacking()) {
-            performAttack();
-        } else {
-            handleMovementInput();
-        }
+        handleMovementInput();
     }
 
     private void updateSpeed() {
-        setSpeed((keyH.shiftPressed && hasBoots) ? 6 : 4);
+        setSpeed((keyH.shiftPressed) ? 6 : 4);
     }
 
     private void updateDash() {
@@ -163,21 +133,6 @@ public class Player extends Entity {
             if (dashCounter > 5) {
                 dash = false;
                 dashCounter = 0;
-            }
-        }
-    }
-
-    private void updatePortalCooldowns() {
-        if (portalCooldown        < 200) portalCooldown++;
-        if (portalMonsterCooldown < 200) portalMonsterCooldown++;
-    }
-
-    private void updateInvincibility() {
-        if (isInvincible()) {
-            setInvincibleCounter(getInvincibleCounter() + 1);
-            if (getInvincibleCounter() > 60) {
-                setInvincible(false);
-                setInvincibleCounter(0);
             }
         }
     }
@@ -219,7 +174,6 @@ public class Player extends Entity {
 
         pickUpObject(objIndex);
         interactNPC(npcIndex);
-        contactMonster(monsterIndex);
 
         if (!colissionOn && !keyH.enterPressed) {
             switch (dir) {
@@ -253,7 +207,6 @@ public class Player extends Entity {
             solidArea.height = attackArea.height;
 
             int monsterIndex = gp.cChecker.checkEntity(this, gp.monster);
-            damageMonster(monsterIndex);
 
             // Restaurar hitbox
             worldX = savedX; worldY = savedY;
@@ -262,33 +215,6 @@ public class Player extends Entity {
         if (spriteCounter > 25) {
             spriteNum = 1;
             spriteCounter = 0;
-            setAttacking(false);
-        }
-    }
-
-    private void damageMonster(int i) {
-        if (i == 999) return;
-        Entity m = gp.monster[i];
-        if (!m.isInvincible()) {
-            gp.playSE(SoundName.HIT_MONSTER);
-            m.decreaseLife(1);
-            m.setInvincible(true);
-            m.damageReaction();
-            if (m.getLife() <= 0) m.setDying(true);
-        }
-    }
-
-    public void contactMonster(int i) {
-        if (i == 999) return;
-        if (!isInvincible()) {
-            gp.playSE(SoundName.RECEIVE_DAMAGE);
-            decreaseLife(1);
-            setInvincible(true);
-            if (getLife() <= 0) {
-                gp.stopMusic();
-                gp.playSE(SoundName.DEATH_EFFECT);
-                gp.gameState = GameState.LOST_SHOW;
-            }
         }
     }
 
@@ -299,7 +225,6 @@ public class Player extends Entity {
                 gp.npc[i].speak();
             } else {
                 gp.playSE(SoundName.SWING);
-                setAttacking(true);
             }
         }
         gp.keyH.enterPressed = false;
@@ -309,38 +234,8 @@ public class Player extends Entity {
         if (i == 999) return;
         Type type = gp.obj[i].getType();
         switch (type) {
-            case KEY -> {
-                gp.obj[i] = null;
-                gp.playSE(SoundName.COIN);
-                keyNum++;
-            }
-            case BOOTS -> {
-                gp.playSE(SoundName.POWER_UP);
-                hasBoots = true;
-                gp.obj[i] = null;
-            }
-            case DOOR -> {
-                if (keyNum > 0) {
-                    int nx = gp.obj[i].getWorldX(), ny = gp.obj[i].getWorldY();
-                    gp.playSE(SoundName.DOOR);
-                    gp.obj[i] = new ObjectDoorOpen();
-                    gp.obj[i].setWorldX(nx);
-                    gp.obj[i].setWorldY(ny);
-                    keyNum--;
-                }
-            }
             case TEST_PORTAL -> {
-                // Objetivo 4: lanza el minijuego desde el Mundo Hub
                 gp.launchVisualTest();
-                gp.obj[i] = null;    // consume el portal
-            }
-            case CHEST -> {
-                if (keyNum > 0) {
-                    gp.playSE(SoundName.FANFARE);
-                    keyNum--;
-                    gp.gameState = GameState.WIN_SHOW;
-                    gp.obj[i] = null;
-                }
             }
         }
     }
@@ -352,25 +247,10 @@ public class Player extends Entity {
 
     public int getScreenX() { return screenX; }
     public int getScreenY() { return screenY; }
-    public int getKeyNum() { return keyNum; }
-    public void setKeyNum(int v) { this.keyNum = v; }
-    public boolean isHasBoots() { return hasBoots; }
     public int getWinCounter() { return winCounter; }
     public void setWinCounter(int v) { this.winCounter = v; }
     public void incrementWinCounter() { this.winCounter++; }
     public int getLostCounter() { return lostCounter; }
     public void setLostCounter(int v) { this.lostCounter = v; }
     public void incrementLostCounter() { this.lostCounter++; }
-    public int getPortalCooldown() { return portalCooldown; }
-    public void setPortalCooldown(int v) { this.portalCooldown = v; }
-    public int getPortalMonsterCooldown() { return portalMonsterCooldown; }
-    public void setPortalMonsterCooldown(int v) { this.portalMonsterCooldown = v; }
-
-    public int getCoinNum() {
-        return coinNum;
-    }
-
-    public void setCoinNum(int coinNum) {
-        this.coinNum = coinNum;
-    }
 }
